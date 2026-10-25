@@ -54,7 +54,6 @@ fk-tests-runner   uk.m4xy.fktests.runner     What runs them. Only the program ma
                   ├── plan                   What's to run: Plan, Suite, TestCase, TestId, Location
                   ├── results                How it went: TestResult, its Outcome, a Failure, a Summary, and Summaries.of
                   ├── events                 TestEvents, what a run tells whoever's listening
-                  ├── time                   Clock, how long things take, and SystemClock, which tells it
                   ├── execution              Execution.run walks the plan; Selections chooses, Isolation runs a test on its own
                   └── reporting              Handlers of TestEvents: ConsoleReport, LineReport
 
@@ -62,11 +61,11 @@ fk-tests-kiln     uk.m4xy.fktests.kiln       The kiln plugin: fkTests(), the tas
                   └── events                 Reading LineReport's lines: RunnerLine, LineReading
 ```
 
-Each package uses only those above it in the list: `execution` uses `plan`, `results`, `events`
-and `time`; `reporting` uses `events` and what they carry; `Runner` puts them together, with
-`SystemClock` and a reporter handling `Clock` and `TestEvents`. Nothing holds state: results are
-returned, and time and events are effects, so a test of the runner can say what time it is and
-keep what it's told.
+Each package uses only those above it in the list: `execution` uses `plan`, `results` and
+`events`, and fckt's `Clock`, from `fckt.time`, for how long tests take; `reporting` uses `events`
+and what they carry; `Runner` puts them together, with a reporter handling `TestEvents`, and
+`main` the system's clock. Nothing holds state: results are returned, and time and events are
+effects, so a test of the runner can say what time it is and keep what it's told.
 
 The task compiles the tests with `fckt --test test --marker uk.m4xy.fktests.api.Test --runner
 uk.m4xy.fktests.runner.Runner`: fckt finds the functions marked `@Test`, and makes a main that

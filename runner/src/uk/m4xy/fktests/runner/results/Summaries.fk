@@ -1,13 +1,15 @@
+import fckt.time.Duration
+
 // How a run went, from how each test did.
 module Summaries {
-  // How many of results passed, failed and were skipped, in a run that took millis.
-  of(results: List<TestResult>, millis: Int): Summary = Summary(
+  // How many of results passed, failed and were skipped, in a run that took as long as took.
+  of(results: List<TestResult>, took: Duration): Summary = Summary(
     results.count(r -> r.outcome == Passed),
     results.count(r -> when (r.outcome) {
       Failed(_) -> true
       else -> false
     }),
     results.count(r -> r.outcome == Skipped),
-    millis,
+    took,
   )
 }

@@ -1,7 +1,8 @@
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
-import uk.m4xy.fktests.runner.time.Clock
+import fckt.time.*
+import fckt.time.Times.*
 
 // Running a plan: each suite with any test chosen, and each chosen test in it, telling TestEvents
 // as it goes. What's chosen, how a test runs on its own, how long it takes and how the run went,
@@ -11,7 +12,7 @@ module Execution {
   @TestEvents @Clock run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
     started = now()
     results = plan.suites.flatMap(suite -> runSuite(suite, selection))
-    summary = Summaries.of(results, now() - started)
+    summary = Summaries.of(results, started.until(now()))
     completed(summary)
     summary
   }
@@ -19,7 +20,7 @@ module Execution {
   // A suite's tests: those chosen run, between its start and finish; the others are skipped.
   @TestEvents @Clock private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
     chosen = suite.cases.filter(c -> Selections.selects(selection, c.id))
-    skipped = suite.cases.filter(c -> !Selections.selects(selection, c.id)).map(c -> TestResult(c.id, Skipped, 0))
+    skipped = suite.cases.filter(c -> !Selections.selects(selection, c.id)).map(c -> TestResult(c.id, Skipped, Duration(0)))
     if (chosen.isEmpty()) skipped
     else {
       suiteStarted(suite.file)
@@ -33,7 +34,7 @@ module Execution {
     testStarted(test.id)
     started = now()
     outcome = Isolation.run(test.body)
-    result = TestResult(test.id, outcome, now() - started)
+    result = TestResult(test.id, outcome, started.until(now()))
     testFinished(result)
     result
   }

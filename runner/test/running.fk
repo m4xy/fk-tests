@@ -3,7 +3,7 @@ import uk.m4xy.fktests.runner.Runner
 import uk.m4xy.fktests.runner.events.TestEvents
 import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.results.*
-import uk.m4xy.fktests.runner.time.Clock
+import fckt.time.*
 
 plan = Runner.plan([Runner.suite("prices.fk", [
   Runner.test("prices.fk", "sums", 3, () -> assert(1 + 1 == 2)),
@@ -19,13 +19,13 @@ heard(selection: Selection): List<String> = {
   TestEvents(
     suiteStarted = suite -> { events = events + ["started ${suite.value}"] },
     testStarted = id -> { events = events + ["started ${id.name}"] },
-    testFinished = result -> { events = events + ["finished ${result.id.name} in ${result.millis}ms: ${outcomeOf(result.outcome)}"] },
+    testFinished = result -> { events = events + ["finished ${result.id.name} in ${result.took.millis}ms: ${outcomeOf(result.outcome)}"] },
     suiteFinished = suite -> { events = events + ["finished ${suite.value}"] },
-    completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped, in ${summary.millis}ms"] },
+    completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped, in ${summary.took.millis}ms"] },
   ) {
     Clock(now = () -> {
       time = time + 5
-      time
+      Instant(time)
     }) { Execution.run(plan, selection) }
   }
   events

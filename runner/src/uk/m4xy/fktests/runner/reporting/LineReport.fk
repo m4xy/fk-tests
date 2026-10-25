@@ -16,13 +16,13 @@ module LineReport : TestEvents {
   @Console suiteStarted(suite: Path): Unit = event(["suite-started", suite.value])
   @Console testStarted(id: TestId): Unit = event(["test-started", id.file.value, id.name])
   @Console testFinished(result: TestResult): Unit = event(["test-finished", result.id.file.value, result.id.name] + when (result.outcome) {
-    Passed -> ["passed", result.millis.toString()]
-    Failed(failure) -> ["failed", result.millis.toString(), failure.message]
+    Passed -> ["passed", result.took.millis.toString()]
+    Failed(failure) -> ["failed", result.took.millis.toString(), failure.message]
     Skipped -> ["skipped", "0"]
   })
   @Console suiteFinished(suite: Path): Unit = event(["suite-finished", suite.value])
   @Console completed(summary: Summary): Unit =
-    event(["completed", summary.passed.toString(), summary.failed.toString(), summary.skipped.toString(), summary.millis.toString()])
+    event(["completed", summary.passed.toString(), summary.failed.toString(), summary.skipped.toString(), summary.took.millis.toString()])
 
   @Console private event(fields: List<String>): Unit = println((["##fk"] + fields.map(f -> escape(f))).joinToString("\t"))
 

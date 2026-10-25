@@ -1,2 +1,4 @@
+import fckt.time.Duration
+
 // How a run went: how many tests passed, failed and were skipped, and how long it took.
-type Summary(passed: Int, failed: Int, skipped: Int, millis: Int)
+type Summary(passed: Int, failed: Int, skipped: Int, took: Duration)
