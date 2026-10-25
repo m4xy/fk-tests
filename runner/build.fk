@@ -1,11 +1,13 @@
 // fk-tests-runner: what runs tests written with fk-tests, for fk-tests-kiln's task, whose tests never
 // see it. Its own tests run with it, as it is here.
 import uk.m4xy.fktests.kiln.*
-import uk.m4xy.fktests.kiln.FkTests.*
-
 
 project = Project(name = "fk-tests-runner", group = "uk.m4xy", version = "0.1.0")
 
-tasks = [
-  fkTests(uses = [projectAt("..")], runner = TestRunner([], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
-]
+// Its tests are written with fk-tests as it is here, and run by the runner they test.
+module OwnTests : TestConfiguration {
+  roots(): List<TestRoot> = [TestRoot(path("test"), uses = [projectAt("..")])]
+  runner(): TestRunner = TestRunner(uses = [])
+}
+
+plugins = [FkTests(OwnTests)]

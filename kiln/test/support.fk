@@ -35,13 +35,15 @@ import fckt.io.Processes.*
   repo = path(here()).resolve("..").value
   write(folder, "settings.fk", "settings = Settings(uses = [projectAt(\"$repo/kiln\")])\n")
   write(folder, "build.fk", """import uk.m4xy.fktests.kiln.*
-import uk.m4xy.fktests.kiln.FkTests.*
 
 project = Project(name = "$name")
 
-tasks = [
-  fkTests(uses = [projectAt("$repo")], runner = TestRunner([projectAt("$repo/runner")], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
-]
+module Tests : TestConfiguration {
+  roots(): List<TestRoot> = [TestRoot(path("test"), uses = [projectAt("$repo")])]
+  runner(): TestRunner = TestRunner(uses = [projectAt("$repo/runner")])
+}
+
+plugins = [FkTests(Tests)]
 """)
 }
 

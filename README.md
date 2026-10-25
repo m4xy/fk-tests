@@ -12,8 +12,8 @@ import pricing.Prices
 @Test emptyIsZero() = assertEquals(0, Prices.total([]))
 ```
 
-A [kiln](https://github.com/m4xy/kiln) project runs them with fk-tests' plugin, whose `fkTests()`
-is a task part of `check`, so of `kiln build`:
+A [kiln](https://github.com/m4xy/kiln) project runs them with fk-tests' plugin, `FkTests`, whose
+task `test` is part of `check`, so of `kiln build`:
 
 ```kotlin
 // settings.fk
@@ -22,11 +22,11 @@ settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")])
 
 ```kotlin
 // build.fk
-import uk.m4xy.fktests.kiln.FkTests.*
+import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "shop")
 
-tasks = [fkTests()]
+plugins = [FkTests()]
 ```
 
 ```
@@ -60,7 +60,7 @@ fk-tests-runner   uk.m4xy.fktests.runner     What runs them. Only the program ma
                   ├── execution              Execution.run walks the plan; Selections chooses, Isolation runs a test on its own
                   └── reporting              Handlers of TestEvents: ConsoleReport, LineReport
 
-fk-tests-kiln     uk.m4xy.fktests.kiln       The kiln plugin: fkTests(), the task that compiles and runs them
+fk-tests-kiln     uk.m4xy.fktests.kiln       The kiln plugin: FkTests, configured by a TestConfiguration; Testing compiles and runs them
                   └── events                 Reading LineReport's lines: RunnerLine, LineReading
 ```
 
@@ -72,8 +72,17 @@ effects, so a test of the runner can say what time it is and keep what it's told
 
 The task compiles the tests with `fckt --test test --marker uk.m4xy.fktests.api.Test --runner
 uk.m4xy.fktests.runner.Runner`: fckt finds the functions marked `@Test`, and makes a main that
-has `Runner` make a plan of them and run it. fckt and kiln know neither library; `fkTests(uses =
-..., runner = TestRunner(...))` takes others.
+has `Runner` make a plan of them and run it. fckt and kiln know neither library; a module that
+follows `TestConfiguration` says where else tests are, with what they're written with, and what
+runs them, overriding only what it says, and `FkTests(Mine)` uses it:
+
+```kotlin
+module Mine : TestConfiguration {
+  roots(): List<TestRoot> = [TestRoot(path("test")), TestRoot(path("integration"))]
+}
+
+plugins = [FkTests(Mine)]
+```
 
 `Execution` runs each test on its own, to a `TestResult`: passed, failed with a `Failure`, or
 skipped, as the `Selection` chooses; then a `Summary`. `Runner` reads the `Selection` from the

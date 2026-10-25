@@ -1,0 +1,2 @@
+// Tests as TestConfiguration has them: in test, written with fk-tests, and run by fk-tests-runner.
+module StandardTests : TestConfiguration {}

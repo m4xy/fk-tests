@@ -1,6 +1,11 @@
 import uk.m4xy.kiln.Dependency
+import uk.m4xy.kiln.Dependencies.*
 
 // What runs tests, apart from what they're written with: what it uses, which only the program made
 // from the tests sees; the module that runs them; and the annotation that marks a test. A runner
 // that uses nothing is the project's own, whose tests use it.
-type TestRunner(uses: List<Dependency>, runner: String, marker: String)
+type TestRunner(
+  uses: List<Dependency> = [library("uk.m4xy:fk-tests-runner:0.1.0")],
+  runner: String = "uk.m4xy.fktests.runner.Runner",
+  marker: String = "uk.m4xy.fktests.api.Test",
+)

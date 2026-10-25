@@ -1,93 +1,21 @@
-import fckt.io.Path
-import fckt.io.Paths.*
-import fckt.io.Files.*
-import fckt.io.Processes.*
-import fckt.io.FileSystem
-import fckt.io.Console
 import uk.m4xy.kiln.*
-import uk.m4xy.kiln.Builds.*
-import uk.m4xy.kiln.Compiling.*
-import uk.m4xy.kiln.Dependencies.*
-import uk.m4xy.fktests.kiln.events.*
 
-// fk-tests, as a kiln plugin: a task that runs a project's functions marked @Test, as part of
-// check. settings.fk has settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")]), and
-// build.fk:
+// fk-tests, as a kiln plugin: the task test, part of check, which runs a project's functions marked
+// @Test. settings.fk says build scripts use it, settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")]),
+// and build.fk applies it, as it is, or configured by a module that follows TestConfiguration:
 //
-//   import uk.m4xy.fktests.kiln.FkTests.*
+//   import uk.m4xy.fktests.kiln.*
 //
-//   tasks = [fkTests()]
-module FkTests {
-  // The task test: the functions marked @Test in folder's files, compiled by fckt to one program
-  // that runner runs, each on its own. They see the project's packages and libraries, and uses,
-  // what they're written with; never the runner. What follows -- chooses which run.
-  fkTests(
-    uses: List<Dependency> = [library("uk.m4xy:fk-tests:0.1.0")],
-    folder: Path = path("test"),
-    runner: TestRunner = TestRunner([library("uk.m4xy:fk-tests-runner:0.1.0")], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test"),
-  ): Task = Task("test", "Runs the functions marked @Test in ${folder.value}", partOf = ["check"], action = build -> test(build, uses, folder, runner))
+//   plugins = [FkTests()]
+module FkTests(Configuration: TestConfiguration = StandardTests) : Plugin {
+  name(): String = "fk-tests"
 
-  // Runs the tests, unless they passed and would be compiled from what they were, and nothing
-  // chooses which.
-  @Building private test(build: Build, uses: List<Dependency>, folder: Path, runner: TestRunner): Unit = {
-    project = build.project
-    marked = if (folder.isDirectory()) folder.listFiles().filter(f -> f.extension == "fk" && hasTests(f)) else []
-    if (marked.isEmpty()) println("  no tests in ${folder.value}")
-    else {
-      tests = resolve(project.copy(dependencies = project.dependencies + uses))
-      resolved = resolve(project.copy(dependencies = project.dependencies + uses + runner.uses))
-      linking = linking(resolved)
-      // For editors: the tests' files see what they're written with, but not the runner.
-      rememberScope("tests", folder, linking.libraries.filter(lib -> tests.libraries.contains(lib.coordinates)))
-      inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker
-      output = project.output.resolve("tests")
-      program = output.resolve("tests")
-      passed = output.resolve("passed")
-      summary = output.resolve("summary")
-      if (build.args.isEmpty() && passed.exists() && passed.readText() == inputs && program.exists()) {
-        println("  ${summary.readText()} (up to date)")
-      } else {
-        passed.delete()
-        buildProgram(project, program, inputs, ml -> {
-          runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--runner", runner.runner, "-o", ml.value, "--separate"] +
-            (if (runner.uses.isEmpty()) ["--runner-tests"] else []) +
-            resolved.roots.flatMap(root -> ["-I", root.value]) + interfaces(linking.libraries))
-          linkProgram(linking, ml, program)
-        })
-        exit = run(program.value, ["--report", "lines"] + build.args)
-        lines = exit.value.trim().split("\n").map(line -> LineReading.parse(line))
-        lines.forEach(line -> show(line))
-        completed = lines.find(line -> when (line) {
-          Completed(_, _, _) -> true
-          else -> false
-        })
-        when (completed) {
-          Some(Completed(passedCount, failedCount, _)) -> {
-            if (failedCount > 0 || exit.code != 0) fail("tests failed")
-            if (build.args.isEmpty()) {
-              summary.writeText(summaryOf(passedCount, failedCount))
-              passed.writeText(inputs)
-            }
-          }
-          else -> fail("the tests stopped before they'd all run")
-        }
-      }
-    }
-  }
-
-  // Shows a line of the run under the task: each file, its tests, then how many passed.
-  @Console private show(line: RunnerLine): Unit = when (line) {
-    SuiteStarted(file) -> println("  $file")
-    TestFinished(name, "passed", _) -> println("    passed $name")
-    TestFinished(name, "failed", message) -> println("    FAILED $name: ${message.split("\n").joinToString("\n      ")}")
-    TestFinished(_, _, _) -> Unit
-    Completed(passed, failed, _) -> println("  ${summaryOf(passed, failed)}")
-    Output(text) -> println("  $text")
-    Ignored -> Unit
-  }
-
-  private summaryOf(passed: Int, failed: Int): String = if (passed + failed == 0) "no tests ran" else "$passed passed, $failed failed"
-
-  // Whether the file marks a function @Test, on a line of its own.
-  @FileSystem private hasTests(file: Path): Boolean = file.readLines().any(line -> line.startsWith("@Test "))
+  tasks(project: Project): List<Task> = [
+    Task(
+      "test",
+      "Runs the functions marked @Test in ${Configuration.roots().map(root -> root.folder.value).joinToString(", ")}",
+      partOf = ["check"],
+      action = build -> Testing.runAll(build, Configuration.roots(), Configuration.runner()),
+    ),
+  ]
 }

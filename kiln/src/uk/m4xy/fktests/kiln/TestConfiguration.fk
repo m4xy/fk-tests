@@ -1,0 +1,17 @@
+import fckt.io.Paths.*
+
+// How a project's tests are run: where they are, with what they're written with, and what runs
+// them. A build configures FkTests with a module that follows it, saying only what isn't as these
+// have it:
+//
+//   module Integration : TestConfiguration {
+//     roots(): List<TestRoot> = [TestRoot(path("test")), TestRoot(path("integration"))]
+//   }
+//
+//   plugins = [FkTests(Integration)]
+spec TestConfiguration {
+  // The folders of tests, each with what its tests are written with.
+  roots(): List<TestRoot> = [TestRoot(path("test"))]
+  // What runs them.
+  runner(): TestRunner = TestRunner()
+}
