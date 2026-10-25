@@ -5,7 +5,8 @@ import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.reporting.Report
 
-sums = TestId(path("prices.fk"), "sums")
+sums = TestId(path("prices.fk"), [], "sums")
+total = TestId(path("prices.fk"), ["Totals", "Empty"], "total")
 
 // Whether args choose sums, if they say what they mean.
 chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
@@ -32,7 +33,19 @@ chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args
   assert(!chosen(["receipts.fk::sums"]))
 }
 
+@Test aSectionChoosesItsTests() = {
+  assertEquals(Ok(Selector.Section(path("prices.fk"), ["Totals"])), Runner.selectorOf("prices.fk::Totals"))
+  only = (arg: String) -> Selections.selects(Runner.selectionOf([arg]).getOrElse(Selection.Only([])), total)
+  assert(only("prices.fk::Totals"))
+  assert(only("prices.fk::Totals.Empty"))
+  assert(!only("prices.fk::Discounts"))
+  assertEquals(Ok(Selector.Exactly(total)), Runner.selectorOf("prices.fk::Totals.Empty.total"))
+  assert(only("prices.fk::Totals.Empty.total"))
+}
+
 @Test whatCantBeReadSaysSo() = {
+  assert(Runner.selectorOf("prices.fk::Totals.sums.more").isError())
+  assert(Runner.selectorOf("prices.fk::sums.Totals").isError())
   assert(Runner.selectorOf("prices.sums").isError())
   assert(Runner.selectorOf("prices.fk::").isError())
   assert(Runner.selectionOf(["sums", "a::b::c"]).isError())

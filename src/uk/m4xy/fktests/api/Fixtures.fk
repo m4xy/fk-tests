@@ -1,0 +1,10 @@
+// What a test runs inside: functions that each take what they run, the first outermost, which can
+// handle what the test does, as withDatabase<A>(test: @Database () -> A): A can. On a module, its
+// tests' sections, they're each of its tests', outside their own:
+//
+//   @Fixtures([withDatabase])
+//   module Saving {
+//     @Test savesAnOrder() = ...
+//     @Test @Fixtures([atNoon]) stampsTheOrder() = ...    // inside withDatabase, then atNoon
+//   }
+@Propagates @Repeatable annotation type Fixtures(fixtures: List<Function>)

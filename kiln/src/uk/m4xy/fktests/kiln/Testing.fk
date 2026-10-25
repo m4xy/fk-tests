@@ -42,7 +42,7 @@ module Testing {
       } else {
         passed.delete()
         buildProgram(project, program, inputs, ml -> {
-          runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--runner", runner.runner, "-o", ml.value, "--separate"] +
+          runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--fixtures", runner.fixtures, "--runner", runner.runner, "-o", ml.value, "--separate"] +
             (if (runner.uses.isEmpty()) ["--runner-tests"] else []) +
             resolved.roots.flatMap(root -> ["-I", root.value]) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)

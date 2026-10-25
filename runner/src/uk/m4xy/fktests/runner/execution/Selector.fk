@@ -7,6 +7,8 @@ type Selector {
   Test(name: String),
   // Every test in that file.
   File(file: Path),
+  // Every test in those sections of that file, and in sections in them.
+  Section(file: Path, sections: List<String>),
   // That one test.
   Exactly(id: TestId),
 }

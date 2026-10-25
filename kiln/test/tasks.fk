@@ -70,3 +70,13 @@ plugins = [FkTests(Both)]
     "> Task :test\n  test/\n  prices.fk\n    passed sums\n  1 passed, 0 failed\n  integration/\n  till.fk\n    passed rings\n  1 passed, 0 failed\n",
   )
 }
+
+// Tests in a module are in its section, which chooses them, and they're named through.
+@Test @FileSystem @Process aSectionChoosesItsTests() = {
+  till = project("sections")
+  write(till, "src/pricing/Prices.fk", prices)
+  write(till, "test/prices.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1]) == 1)\n\nmodule Empty {\n  @Test totalsNothing() = assert(Prices.total([]) == 0)\n}\n")
+  testedProject(till, "sections")
+  expectContains(kiln(till, ["test"]).value, "  prices.fk\n    passed sums\n    passed Empty.totalsNothing\n  2 passed, 0 failed\n")
+  expectContains(kiln(till, ["test", "--", "prices.fk::Empty"]).value, "  prices.fk\n    passed Empty.totalsNothing\n  1 passed, 0 failed\n")
+}

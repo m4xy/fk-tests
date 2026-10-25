@@ -1,0 +1,40 @@
+import uk.m4xy.fktests.api.*
+
+// What a test records, which only a fixture can answer.
+effect Ledger {
+  record(line: String): Unit
+  lines(): List<String>
+}
+
+// A fixture: a ledger of the test's own, which starts empty.
+inLedger<A>(test: @Ledger () -> A): A = {
+  var kept = []
+  Ledger(record = line -> { kept = kept + [line] }, lines = () -> kept) { test() }
+}
+
+// One that runs inside another, using what that one handles.
+@Ledger opened<A>(test: @Ledger () -> A): A = {
+  record("opened")
+  test()
+}
+
+@Test @Fixtures([inLedger]) @Ledger aTestRunsInsideItsFixtures() = {
+  record("a")
+  assertEquals(["a"], lines())
+}
+
+// What the tests in it do, which their fixtures answer.
+@Ledger @Fixtures([inLedger])
+module Sections {
+  @Test eachTestRunsInsideItsSectionsFixtures() = assertEquals([], lines())
+
+  @Test @Fixtures([opened]) itsOwnRunInsideThem() = assertEquals(["opened"], lines())
+
+  @Fixtures([opened])
+  module Nested {
+    @Test andTheirSectionsToo() = {
+      record("nested")
+      assertEquals(["opened", "nested"], lines())
+    }
+  }
+}

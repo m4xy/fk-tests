@@ -38,19 +38,50 @@ $ kiln build
     FAILED emptyIsZero: prices.fk line 5: expected:<0> but was:<1>
   1 passed, 1 failed
 BUILD FAILED: tests failed
-$ kiln test -- sumsItems      # or prices.fk, or prices.fk::sumsItems
+$ kiln test -- sumsItems      # or prices.fk, prices.fk::sumsItems, or a section, prices.fk::Totals
 ```
 
-A test is a function with no parameters, marked `@Test`, in a file in `test`. A failed `assert`,
-`fail(...)` or an exception fails just that test; its effects are main's, handled as main's are.
-The other files there are what the tests share.
+A test is a function with no parameters, marked `@Test`, in a file in `test`, or in a module in
+one: its section, as `Totals.sumsItems`. A failed `assert`, `fail(...)` or an exception fails just
+that test; its effects are main's, handled as main's are. The other files there are what the tests
+share.
+
+## Fixtures
+
+A test runs inside the fixtures `@Fixtures` lists on it, and on its sections: functions that each
+take what they run, the first outermost, which can handle what the test does. A section's run
+outside its tests' own, and each test gets them afresh:
+
+```kotlin
+import uk.m4xy.fktests.api.*
+
+effect Ledger {
+  record(line: String): Unit
+  lines(): List<String>
+}
+
+inLedger<A>(test: @Ledger () -> A): A = {
+  var kept = []
+  Ledger(record = line -> { kept = kept + [line] }, lines = () -> kept) { test() }
+}
+
+@Ledger @Fixtures([inLedger])
+module Sections {
+  @Test startsEmpty() = assertEquals([], lines())        // inside inLedger
+  @Test @Fixtures([opened]) seesItOpened() = ...          // inside inLedger, then opened
+}
+```
+
+A fixture is named on each test, or section, it's for, never applied by itself: what a test runs
+inside is on it, or on the module it's in. A test that does what no fixture handles, and has no
+default, doesn't compile.
 
 ## How it works
 
 Three libraries, each a package of its own under `uk.m4xy.fktests`:
 
 ```
-fk-tests          uk.m4xy.fktests.api        What tests are written with: Test. The tests see it, and nothing else does.
+fk-tests          uk.m4xy.fktests.api        What tests are written with: Test, Fixtures. The tests see it, and nothing else does.
 
 fk-tests-runner   uk.m4xy.fktests.runner     What runs them. Only the program made from the tests uses it.
                   ├── Runner                 What fckt's main calls: test, suite and plan make the plan; main runs it
@@ -87,7 +118,8 @@ plugins = [FkTests(Mine)]
 `Execution` runs each test on its own, to a `TestResult`: passed, failed with a `Failure`, or
 skipped, as the `Selection` chooses; then a `Summary`. `Runner` reads the `Selection` from the
 arguments, a `Selector` each, written as pytest's are: `sums`, every test of that name;
-`prices.fk`, every test in that file; `prices.fk::sums`, that one test. Files are `Path`s, from the
+`prices.fk`, every test in that file; `prices.fk::sums`, that one test; `prices.fk::Totals`, the
+tests in that section, and `prices.fk::Totals.sums`, one of them. Files are `Path`s, from the
 tests' folder. It doesn't print: it
 tells `TestEvents`, as each suite and test starts and finishes, and when the run's done. A handler
 reports them: `ConsoleReport`, for people; `LineReport`, an event a line, with `--report lines`,

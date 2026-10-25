@@ -1,5 +1,6 @@
 import fckt.io.Path
 import uk.m4xy.fktests.runner.plan.TestId
+import uk.m4xy.fktests.runner.plan.TestIds.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
 
@@ -14,8 +15,8 @@ import uk.m4xy.fktests.runner.events.TestEvents
 // A test's own output, which isn't, is on lines of its own between them.
 module LineReport : TestEvents {
   @Console suiteStarted(suite: Path): Unit = event(["suite-started", suite.value])
-  @Console testStarted(id: TestId): Unit = event(["test-started", id.file.value, id.name])
-  @Console testFinished(result: TestResult): Unit = event(["test-finished", result.id.file.value, result.id.name] + when (result.outcome) {
+  @Console testStarted(id: TestId): Unit = event(["test-started", id.file.value, id.qualifiedName])
+  @Console testFinished(result: TestResult): Unit = event(["test-finished", result.id.file.value, result.id.qualifiedName] + when (result.outcome) {
     Passed -> ["passed", result.took.millis.toString()]
     Failed(failure) -> ["failed", result.took.millis.toString(), failure.message]
     Skipped -> ["skipped", "0"]

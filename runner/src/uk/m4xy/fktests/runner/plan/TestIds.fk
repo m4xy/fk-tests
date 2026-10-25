@@ -1,0 +1,5 @@
+// What's said of a test's id.
+module TestIds {
+  // Its name, through its sections: Counting.Deeper.deep.
+  TestId.qualifiedName: String = (this.sections + [this.name]).joinToString(".")
+}

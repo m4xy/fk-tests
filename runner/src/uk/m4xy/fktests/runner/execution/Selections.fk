@@ -12,6 +12,7 @@ module Selections {
   chooses(selector: Selector, id: TestId): Boolean = when (selector) {
     Test(name) -> id.name == name
     File(file) -> id.file == file
+    Section(file, sections) -> id.file == file && id.sections.take(sections.size) == sections
     Exactly(wanted) -> id == wanted
   }
 }
