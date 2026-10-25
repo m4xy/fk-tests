@@ -30,6 +30,7 @@ module Testing {
       tests = resolve(project.copy(dependencies = project.dependencies + uses))
       resolved = resolve(project.copy(dependencies = project.dependencies + uses + runner.uses))
       linking = linking(resolved)
+      // The tests see what's internal to the project, as its own code does, but not to the projects it uses.
       // For editors: the tests' files see what they're written with, but not the runner.
       rememberScope(folder.name, folder, linking.libraries.filter { tests.libraries.contains(it.coordinates) })
       inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker
@@ -44,7 +45,7 @@ module Testing {
         buildProgram(project, program, inputs) { ml ->
           runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--fixtures", runner.fixtures, "--runner", runner.runner, "-o", ml.value, "--separate"] +
             (if (runner.uses.isEmpty()) ["--runner-tests"] else []) +
-            resolved.roots.flatMap { ["-I", it.value] } + interfaces(linking.libraries))
+            sourceArgs(project.sources, resolved.roots) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)
         }
         exit = run(program.value, ["--report", "lines"] + build.args)
