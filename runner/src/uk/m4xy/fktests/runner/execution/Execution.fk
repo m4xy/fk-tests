@@ -1,43 +1,25 @@
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
+import uk.m4xy.fktests.runner.time.Clock
 
-// Running a plan: each test on its own, so one that fails doesn't stop the others, telling
-// TestEvents as it goes, to a summary of how it went.
+// Running a plan: each suite with any test chosen, and each chosen test in it, telling TestEvents
+// as it goes. What's chosen, how a test runs on its own, how long it takes and how the run went,
+// it asks Selections, Isolation, Clock and Summaries.
 module Execution {
-  // Runs what selection chooses of plan, each suite with any chosen, and says how it went.
-  @TestEvents run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
+  // Runs what selection chooses of plan, and says how it went.
+  @TestEvents @Clock run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
     started = now()
     results = plan.suites.flatMap(suite -> runSuite(suite, selection))
-    summary = Summary(
-      results.count(r -> r.outcome == Passed),
-      results.count(r -> when (r.outcome) {
-        Failed(_) -> true
-        else -> false
-      }),
-      results.count(r -> r.outcome == Skipped),
-      millisSince(started),
-    )
+    summary = Summaries.of(results, now() - started)
     completed(summary)
     summary
   }
 
-  // Whether selection chooses the test id is.
-  selects(selection: Selection, id: TestId): Boolean = when (selection) {
-    All -> true
-    Only(selectors) -> selectors.any(s -> chooses(s, id))
-  }
-
-  // Whether selector chooses the test id is.
-  chooses(selector: Selector, id: TestId): Boolean = when (selector) {
-    Test(name) -> id.name == name
-    File(file) -> id.file == file
-    Exactly(wanted) -> id == wanted
-  }
-
-  @TestEvents private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
-    chosen = suite.cases.filter(c -> selects(selection, c.id))
-    skipped = suite.cases.filter(c -> !selects(selection, c.id)).map(c -> TestResult(c.id, Skipped, 0))
+  // A suite's tests: those chosen run, between its start and finish; the others are skipped.
+  @TestEvents @Clock private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
+    chosen = suite.cases.filter(c -> Selections.selects(selection, c.id))
+    skipped = suite.cases.filter(c -> !Selections.selects(selection, c.id)).map(c -> TestResult(c.id, Skipped, 0))
     if (chosen.isEmpty()) skipped
     else {
       suiteStarted(suite.file)
@@ -47,24 +29,12 @@ module Execution {
     }
   }
 
-  // Runs a test on its own: what stops it, a failed assertion, fail(...) or an exception, fails it.
-  @TestEvents private runCase<@E>(test: TestCase<@E>): TestResult = {
+  @TestEvents @Clock private runCase<@E>(test: TestCase<@E>): TestResult = {
     testStarted(test.id)
     started = now()
-    outcome = when (attempt { caught(test.body).map(reason -> fail(reason)).getOrElse(Unit) }) {
-      Ok(_) -> Passed
-      Error(reason) -> Failed(Failure(reason))
-    }
-    result = TestResult(test.id, outcome, millisSince(started))
+    outcome = Isolation.run(test.body)
+    result = TestResult(test.id, outcome, now() - started)
     testFinished(result)
     result
   }
-
-  private millisSince(started: Float): Int = ((now() - started) * 1000.0).toInt()
-
-  // What stopped body, an assertion that failed or an OCaml exception, if anything did.
-  private external caught(body: () -> Unit): Option<String> =
-    "(fun f -> try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) body"
-
-  private external now(): Float = "Unix.gettimeofday ()"
 }

@@ -52,17 +52,21 @@ fk-tests          uk.m4xy.fktests.api        What tests are written with: Test. 
 fk-tests-runner   uk.m4xy.fktests.runner     What runs them. Only the program made from the tests uses it.
                   ├── Runner                 What fckt's main calls: test, suite and plan make the plan; main runs it
                   ├── plan                   What's to run: Plan, Suite, TestCase, TestId, Location
-                  ├── results                How it went: TestResult, its Outcome, a Failure, a Summary
+                  ├── results                How it went: TestResult, its Outcome, a Failure, a Summary, and Summaries.of
                   ├── events                 TestEvents, what a run tells whoever's listening
-                  ├── execution              Execution.run, each test on its own, as a Selection chooses
+                  ├── time                   Clock, how long things take, and SystemClock, which tells it
+                  ├── execution              Execution.run walks the plan; Selections chooses, Isolation runs a test on its own
                   └── reporting              Handlers of TestEvents: ConsoleReport, LineReport
 
 fk-tests-kiln     uk.m4xy.fktests.kiln       The kiln plugin: fkTests(), the task that compiles and runs them
                   └── events                 Reading LineReport's lines: RunnerLine, LineReading
 ```
 
-Each package uses only those above it in the list: `execution` uses `plan`, `results` and
-`events`; `reporting` uses `events` and what they carry; `Runner` puts them together.
+Each package uses only those above it in the list: `execution` uses `plan`, `results`, `events`
+and `time`; `reporting` uses `events` and what they carry; `Runner` puts them together, with
+`SystemClock` and a reporter handling `Clock` and `TestEvents`. Nothing holds state: results are
+returned, and time and events are effects, so a test of the runner can say what time it is and
+keep what it's told.
 
 The task compiles the tests with `fckt --test test --marker uk.m4xy.fktests.api.Test --runner
 uk.m4xy.fktests.runner.Runner`: fckt finds the functions marked `@Test`, and makes a main that

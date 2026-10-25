@@ -1,0 +1,15 @@
+import uk.m4xy.fktests.runner.results.*
+
+// Running a test's body on its own: whatever stops it, a failed assertion, fail(...) or an OCaml
+// exception, fails it, and goes no further.
+module Isolation {
+  // How body went: passed, unless something stopped it.
+  run<@E>(body: @Fail @E () -> Unit): Outcome = when (attempt { caught(body).map(reason -> fail(reason)).getOrElse(Unit) }) {
+    Ok(_) -> Passed
+    Error(reason) -> Failed(Failure(reason))
+  }
+
+  // What stopped body, an assertion that failed or an OCaml exception, if anything did.
+  private external caught(body: () -> Unit): Option<String> =
+    "(fun f -> try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) body"
+}

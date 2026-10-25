@@ -8,7 +8,7 @@ import uk.m4xy.fktests.runner.reporting.Report
 sums = TestId(path("prices.fk"), "sums")
 
 // Whether args choose sums, if they say what they mean.
-chosen(args: List<String>): Boolean = Execution.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
+chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
 
 @Test allRunWithoutArguments() = assert(chosen([]))
 

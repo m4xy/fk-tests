@@ -1,0 +1,6 @@
+// The time the system says.
+module SystemClock : Clock {
+  now(): Int = millis()
+
+  private external millis(): Int = "int_of_float (Unix.gettimeofday () *. 1000.)"
+}

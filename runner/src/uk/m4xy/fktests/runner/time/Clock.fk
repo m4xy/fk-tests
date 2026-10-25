@@ -1,0 +1,5 @@
+// What time it is, in milliseconds since some moment: how long something took is the difference.
+// SystemClock tells it; a test of the runner can say it.
+effect Clock {
+  now(): Int
+}

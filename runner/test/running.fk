@@ -3,6 +3,7 @@ import uk.m4xy.fktests.runner.Runner
 import uk.m4xy.fktests.runner.events.TestEvents
 import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.results.*
+import uk.m4xy.fktests.runner.time.Clock
 
 plan = Runner.plan([Runner.suite("prices.fk", [
   Runner.test("prices.fk", "sums", 3, () -> assert(1 + 1 == 2)),
@@ -10,16 +11,23 @@ plan = Runner.plan([Runner.suite("prices.fk", [
   Runner.test("prices.fk", "divides", 5, () -> assert(1 / 0 == 0)),
 ])])
 
-// What a run tells TestEvents, as a handler that keeps it has it.
+// What a run tells TestEvents, as a handler that keeps it has it, on a clock that moves 5ms each
+// time it's asked.
 heard(selection: Selection): List<String> = {
   var events = []
+  var time = 0
   TestEvents(
     suiteStarted = suite -> { events = events + ["started ${suite.value}"] },
     testStarted = id -> { events = events + ["started ${id.name}"] },
-    testFinished = result -> { events = events + ["finished ${result.id.name}: ${outcomeOf(result.outcome)}"] },
+    testFinished = result -> { events = events + ["finished ${result.id.name} in ${result.millis}ms: ${outcomeOf(result.outcome)}"] },
     suiteFinished = suite -> { events = events + ["finished ${suite.value}"] },
-    completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped"] },
-  ) { Execution.run(plan, selection) }
+    completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped, in ${summary.millis}ms"] },
+  ) {
+    Clock(now = () -> {
+      time = time + 5
+      time
+    }) { Execution.run(plan, selection) }
+  }
   events
 }
 
@@ -33,17 +41,17 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
 @Test eachTestRunsOnItsOwn() = assertEquals(
   [
     "started prices.fk",
-    "started sums", "finished sums: passed",
-    "started empty", "finished empty: failed, running.fk line 9: expected:<1> but was:<2>",
-    "started divides", "finished divides: failed, Division_by_zero",
+    "started sums", "finished sums in 5ms: passed",
+    "started empty", "finished empty in 5ms: failed, running.fk line 10: expected:<1> but was:<2>",
+    "started divides", "finished divides in 5ms: failed, Division_by_zero",
     "finished prices.fk",
-    "1 passed, 2 failed, 0 skipped",
+    "1 passed, 2 failed, 0 skipped, in 35ms",
   ],
   heard(Selection.All),
 )
 
 // What isn't chosen is skipped, without being started.
 @Test whatIsntChosenIsSkipped() = assertEquals(
-  ["started prices.fk", "started sums", "finished sums: passed", "finished prices.fk", "1 passed, 0 failed, 2 skipped"],
+  ["started prices.fk", "started sums", "finished sums in 5ms: passed", "finished prices.fk", "1 passed, 0 failed, 2 skipped, in 15ms"],
   heard(Selection.Only([Selector.Test("sums")])),
 )
