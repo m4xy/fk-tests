@@ -54,8 +54,16 @@ Three projects, each a library of its own:
 
 The task compiles the tests with `fckt --test test --marker uk.m4xy.fktests.Test --runner
 uk.m4xy.fktestsrunner.Testing`: fckt finds the functions marked `@Test`, and makes a main that
-gives each to the runner. fckt and kiln know neither library; `fkTests(uses = ..., runner =
-TestRunner(...))` takes others.
+gives the runner a `Plan` of them: a `Suite` for each file, of `TestCase`s, each with its
+`TestId`, its `Location` and what it does. fckt and kiln know neither library; `fkTests(uses =
+..., runner = TestRunner(...))` takes others.
+
+The runner runs each case on its own, to a `TestResult`, its `Outcome` passed, failed with a
+`Failure`, or skipped, as the `Selection` from the arguments chooses; then a `Summary`. It doesn't
+print: it tells the `TestEvents` effect, as each suite and test starts and finishes, and when the
+run's done. A handler reports them: `ConsoleReport`, for people, by default; `LineReport`, an event
+a line, with `--report lines`, which the plugin reads, to show them under its task; or one a test
+makes, as the runner's own tests do, to see what a run did.
 
 ## Building
 

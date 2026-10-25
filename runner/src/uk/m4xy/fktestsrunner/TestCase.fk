@@ -1,0 +1,3 @@
+// A test: which it is, where it's declared, and what it does, which fails it by failing, as a
+// failed assert does. @E is what else it does, as @FileSystem.
+type TestCase<@E>(id: TestId, at: Location, body: @Fail @E () -> Unit)

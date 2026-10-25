@@ -1,0 +1,2 @@
+// Where in its file something is.
+type Location(file: String, line: Int)

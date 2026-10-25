@@ -1,0 +1,2 @@
+// The tests there are to run, as fckt --test found them: a suite for each file with any.
+type Plan<@E>(suites: List<Suite<@E>>)

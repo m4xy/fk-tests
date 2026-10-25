@@ -1,0 +1,2 @@
+// Why a test failed: what the assertion, fail(...) or exception that stopped it said.
+type Failure(message: String)

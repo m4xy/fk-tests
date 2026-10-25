@@ -1,0 +1,45 @@
+import uk.m4xy.fktests.Test
+import uk.m4xy.fktestsrunner.*
+
+passing = TestCase(TestId("prices.fk", "sums"), Location("prices.fk", 3), () -> assert(1 + 1 == 2))
+failing = TestCase(TestId("prices.fk", "empty"), Location("prices.fk", 4), () -> assertEquals(1, 2))
+crashing = TestCase(TestId("prices.fk", "divides"), Location("prices.fk", 5), () -> assert(1 / 0 == 0))
+plan = Plan([Suite("prices.fk", [passing, failing, crashing])])
+
+// What a run tells TestEvents, as a handler that keeps it has it.
+heard(selection: Selection): List<String> = {
+  var events = []
+  TestEvents(
+    suiteStarted = suite -> { events = events + ["started $suite"] },
+    testStarted = id -> { events = events + ["started ${id.name}"] },
+    testFinished = result -> { events = events + ["finished ${result.id.name}: ${outcomeOf(result.outcome)}"] },
+    suiteFinished = suite -> { events = events + ["finished $suite"] },
+    completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped"] },
+  ) { Testing.run(plan, selection) }
+  events
+}
+
+outcomeOf(outcome: Outcome): String = when (outcome) {
+  Passed -> "passed"
+  Failed(failure) -> "failed, ${failure.message}"
+  Skipped -> "skipped"
+}
+
+// Each test runs on its own: one failing, or crashing, doesn't stop the others.
+@Test eachTestRunsOnItsOwn() = assertEquals(
+  [
+    "started prices.fk",
+    "started sums", "finished sums: passed",
+    "started empty", "finished empty: failed, running.fk line 5: expected:<1> but was:<2>",
+    "started divides", "finished divides: failed, Division_by_zero",
+    "finished prices.fk",
+    "1 passed, 2 failed, 0 skipped",
+  ],
+  heard(Selection.All),
+)
+
+// What isn't chosen is skipped, without being started.
+@Test whatIsntChosenIsSkipped() = assertEquals(
+  ["started prices.fk", "started sums", "finished sums: passed", "finished prices.fk", "1 passed, 0 failed, 2 skipped"],
+  heard(Selection.Only(["sums"])),
+)

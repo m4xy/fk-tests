@@ -1,0 +1,2 @@
+// A file's tests, in the order they're declared.
+type Suite<@E>(file: String, cases: List<TestCase<@E>>)

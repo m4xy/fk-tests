@@ -3,6 +3,7 @@ import fckt.io.Paths.*
 import fckt.io.Files.*
 import fckt.io.Processes.*
 import fckt.io.FileSystem
+import fckt.io.Console
 import uk.m4xy.kiln.*
 import uk.m4xy.kiln.Builds.*
 import uk.m4xy.kiln.Compiling.*
@@ -50,17 +51,56 @@ module FkTests {
             resolved.roots.flatMap(root -> ["-I", root.value]) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)
         })
-        exit = run(program.value, build.args)
-        lines = exit.value.trim().split("\n")
-        lines.forEach(line -> println("  $line"))
-        if (exit.code != 0) fail("tests failed")
-        if (build.args.isEmpty()) {
-          summary.writeText(lines.lastOrNull().getOrElse(""))
-          passed.writeText(inputs)
+        exit = run(program.value, ["--report", "lines"] + build.args)
+        lines = exit.value.trim().split("\n").map(line -> parse(line))
+        lines.forEach(line -> show(line))
+        completed = lines.find(line -> when (line) {
+          Completed(_, _, _) -> true
+          else -> false
+        })
+        when (completed) {
+          Some(Completed(passedCount, failedCount, _)) -> {
+            if (failedCount > 0 || exit.code != 0) fail("tests failed")
+            if (build.args.isEmpty()) {
+              summary.writeText(summaryOf(passedCount, failedCount))
+              passed.writeText(inputs)
+            }
+          }
+          else -> fail("the tests stopped before they'd all run")
         }
       }
     }
   }
+
+  // Shows a line of the run under the task: each file, its tests, then how many passed.
+  @Console private show(line: RunnerLine): Unit = when (line) {
+    SuiteStarted(file) -> println("  $file")
+    TestFinished(name, "passed", _) -> println("    passed $name")
+    TestFinished(name, "failed", message) -> println("    FAILED $name: ${message.split("\n").joinToString("\n      ")}")
+    TestFinished(_, _, _) -> Unit
+    Completed(passed, failed, _) -> println("  ${summaryOf(passed, failed)}")
+    Output(text) -> println("  $text")
+    Ignored -> Unit
+  }
+
+  private summaryOf(passed: Int, failed: Int): String = if (passed + failed == 0) "no tests ran" else "$passed passed, $failed failed"
+
+  // A line as LineReport writes an event, ##fk and its fields, a tab before each; or output.
+  parse(line: String): RunnerLine =
+    if (!line.startsWith("##fk\t")) Output(line)
+    else when (line.split("\t").drop(1).map(field -> unescape(field))) {
+      ["suite-started", file] -> SuiteStarted(file)
+      ["test-finished", _, name, outcome, _] -> TestFinished(name, outcome, "")
+      ["test-finished", _, name, outcome, _, message] -> TestFinished(name, outcome, message)
+      ["completed", passed, failed, skipped, _] -> Completed(count(passed), count(failed), count(skipped))
+      else -> Ignored
+    }
+
+  private count(field: String): Int = field.toIntOrNone().getOrElse(0)
+
+  // A field as it was before LineReport escaped it: \t, \n and \\ back to a tab, a newline and \.
+  private unescape(field: String): String =
+    field.split("\\\\").map(part -> part.split("\\t").joinToString("\t").split("\\n").joinToString("\n")).joinToString("\\")
 
   // Whether the file marks a function @Test, on a line of its own.
   @FileSystem private hasTests(file: Path): Boolean = file.readLines().any(line -> line.startsWith("@Test "))

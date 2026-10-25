@@ -1,0 +1,10 @@
+// What a run tells whoever's listening, as it goes: each suite and test as it starts and finishes,
+// then how it went. A handler reports them: ConsoleReport, for people, unless main says another,
+// as LineReport, for programs; or a test of the runner keeps them.
+@HandledBy(ConsoleReport) effect TestEvents {
+  suiteStarted(suite: String): Unit
+  testStarted(id: TestId): Unit
+  testFinished(result: TestResult): Unit
+  suiteFinished(suite: String): Unit
+  completed(summary: Summary): Unit
+}

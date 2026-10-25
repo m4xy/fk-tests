@@ -1,0 +1,9 @@
+// A line of what the test program printed, as LineReport reports a run: an event, or a test's own
+// output.
+type RunnerLine {
+  SuiteStarted(file: String),
+  TestFinished(name: String, outcome: String, message: String),
+  Completed(passed: Int, failed: Int, skipped: Int),
+  Output(text: String),
+  Ignored,
+}

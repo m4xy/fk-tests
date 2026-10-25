@@ -1,0 +1,6 @@
+// How a test went.
+type Outcome {
+  Passed,
+  Failed(failure: Failure),
+  Skipped,
+}

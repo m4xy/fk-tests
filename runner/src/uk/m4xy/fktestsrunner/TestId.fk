@@ -1,0 +1,2 @@
+// Which test: its name, and the file it's in, prices.fk.
+type TestId(file: String, name: String)
