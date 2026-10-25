@@ -11,7 +11,7 @@ module Execution {
   // Runs what selection chooses of plan, and says how it went.
   @TestEvents @Clock run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
     started = now()
-    results = plan.suites.flatMap(suite -> runSuite(suite, selection))
+    results = plan.suites.flatMap { runSuite(it, selection) }
     summary = Summaries.of(results, started.until(now()))
     completed(summary)
     summary
@@ -19,12 +19,12 @@ module Execution {
 
   // A suite's tests: those chosen run, between its start and finish; the others are skipped.
   @TestEvents @Clock private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
-    (chosen, others) = suite.cases.partition(c -> Selections.selects(selection, c.id))
-    skipped = others.map(c -> TestResult(c.id, Skipped, Duration(0)))
+    (chosen, others) = suite.cases.partition { Selections.selects(selection, it.id) }
+    skipped = others.map { TestResult(it.id, Skipped, Duration(0)) }
     if (chosen.isEmpty()) skipped
     else {
       suiteStarted(suite.file)
-      results = chosen.map(c -> runCase(c))
+      results = chosen.map { runCase(it) }
       suiteFinished(suite.file)
       results + skipped
     }

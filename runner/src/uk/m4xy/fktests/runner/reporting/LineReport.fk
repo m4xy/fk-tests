@@ -25,7 +25,7 @@ module LineReport : TestEvents {
   @Console completed(summary: Summary): Unit =
     event(["completed", summary.passed.toString(), summary.failed.toString(), summary.skipped.toString(), summary.took.millis.toString()])
 
-  @Console private event(fields: List<String>): Unit = println((["##fk"] + fields.map(f -> escape(f))).joinToString("\t"))
+  @Console private event(fields: List<String>): Unit = println((["##fk"] + fields.map { escape(it) }).joinToString("\t"))
 
   private escape(field: String): String = field.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 }

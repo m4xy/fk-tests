@@ -37,11 +37,11 @@ module Runner {
 
   // The tests args choose: those their selectors do, or, without any, all.
   selectionOf(args: List<String>): Result<Selection, String> = {
-    selectors = withoutOptions(args).map(arg -> selectorOf(arg))
-    when (selectors.find(s -> s.isError())) {
+    selectors = withoutOptions(args).map { selectorOf(it) }
+    when (selectors.find { it.isError() }) {
       Some(Error(problem)) -> Error(problem)
       else -> {
-        chosen = selectors.flatMap(s -> s.toOption().map(c -> [c]).getOrElse([]))
+        chosen = selectors.flatMap { s -> s.toOption().map { [it] }.getOrElse([]) }
         Ok(if (chosen.isEmpty()) All else Only(chosen))
       }
     }
@@ -53,9 +53,9 @@ module Runner {
   selectorOf(arg: String): Result<Selector, String> = when (arg.split("::")) {
     [file, within] -> {
       parts = within.split(".")
-      sections = parts.takeWhile(p -> isSection(p))
+      sections = parts.takeWhile { isSection(it) }
       rest = parts.drop(sections.size)
-      if (!isFile(file) || !parts.all(p -> isName(p))) Error(unreadable(arg))
+      if (!isFile(file) || !parts.all { isName(it) }) Error(unreadable(arg))
       else when (rest) {
         [] -> Ok(Section(path(file), sections))
         [name] -> if (isSection(name)) Error(unreadable(arg)) else Ok(Exactly(TestId(path(file), sections, name)))
@@ -75,9 +75,9 @@ module Runner {
 
   private isFile(text: String): Boolean = text.endsWith(".fk") && text.length > 3
 
-  private isName(text: String): Boolean = text.isNotEmpty() && text.toList().all(c -> c.isLetterOrDigit() || c == '_')
+  private isName(text: String): Boolean = text.isNotEmpty() && text.toList().all { it.isLetterOrDigit() || it == '_' }
 
-  private isSection(text: String): Boolean = isName(text) && text.toList().firstOrNone().map(c -> c.isUpperCase()).getOrElse(false)
+  private isSection(text: String): Boolean = isName(text) && text.toList().firstOrNone().map { it.isUpperCase() }.getOrElse(false)
 
   private unreadable(arg: String): String =
     "can't tell which tests '$arg' means: a test's name, sums; a file, prices.fk; a file's test, prices.fk::sums; or a section of it, prices.fk::Totals"

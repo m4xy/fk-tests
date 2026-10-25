@@ -6,9 +6,9 @@ import uk.m4xy.fktests.runner.results.*
 import fckt.time.*
 
 plan = Runner.plan([Runner.suite("prices.fk", [
-  Runner.test("prices.fk", [], "sums", 3, () -> assert(1 + 1 == 2)),
-  Runner.test("prices.fk", [], "empty", 4, () -> assertEquals(1, 2)),
-  Runner.test("prices.fk", [], "divides", 5, () -> assert(1 / 0 == 0)),
+  Runner.test("prices.fk", [], "sums", 3) { assert(1 + 1 == 2) },
+  Runner.test("prices.fk", [], "empty", 4) { assertEquals(1, 2) },
+  Runner.test("prices.fk", [], "divides", 5) { assert(1 / 0 == 0) },
 ])])
 
 // What a run tells TestEvents, as a handler that keeps it has it, on a clock that moves 5ms each

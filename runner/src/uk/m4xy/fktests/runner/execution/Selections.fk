@@ -5,7 +5,7 @@ module Selections {
   // Whether selection chooses the test id is.
   selects(selection: Selection, id: TestId): Boolean = when (selection) {
     All -> true
-    Only(selectors) -> selectors.any(s -> chooses(s, id))
+    Only(selectors) -> selectors.any { chooses(it, id) }
   }
 
   // Whether selector chooses the test id is.

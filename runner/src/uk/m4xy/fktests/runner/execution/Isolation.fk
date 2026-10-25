@@ -4,7 +4,7 @@ import uk.m4xy.fktests.runner.results.*
 // exception, fails it, and goes no further.
 module Isolation {
   // How body went: passed, unless something stopped it.
-  run<@E>(body: @Fail @E () -> Unit): Outcome = when (attempt { caught(body).map(reason -> fail(reason)).getOrElse(Unit) }) {
+  run<@E>(body: @Fail @E () -> Unit): Outcome = when (attempt { caught(body).map { fail(it) }.getOrElse(Unit) }) {
     Ok(_) -> Passed
     Error(reason) -> Failed(Failure(reason))
   }

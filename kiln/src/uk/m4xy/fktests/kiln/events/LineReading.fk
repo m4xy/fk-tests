@@ -3,7 +3,7 @@ module LineReading {
   // A line as LineReport writes an event, ##fk and its fields, a tab before each; or output.
   parse(line: String): RunnerLine =
     if (!line.startsWith("##fk\t")) Output(line)
-    else when (line.split("\t").drop(1).map(field -> unescape(field))) {
+    else when (line.split("\t").drop(1).map { unescape(it) }) {
       ["suite-started", file] -> SuiteStarted(file)
       ["test-finished", _, name, outcome, _] -> TestFinished(name, outcome, "")
       ["test-finished", _, name, outcome, _, message] -> TestFinished(name, outcome, message)
@@ -15,5 +15,5 @@ module LineReading {
 
   // A field as it was before LineReport escaped it: \t, \n and \\ back to a tab, a newline and \.
   private unescape(field: String): String =
-    field.split("\\\\").map(part -> part.replace("\\t", "\t").replace("\\n", "\n")).joinToString("\\")
+    field.split("\\\\").map { it.replace("\\t", "\t").replace("\\n", "\n") }.joinToString("\\")
 }
