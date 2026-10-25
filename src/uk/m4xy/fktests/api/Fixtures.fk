@@ -2,9 +2,9 @@
 // handle what the test does, as withDatabase<A>(test: @Database () -> A): A can. On a module, its
 // tests' sections, they're each of its tests', outside their own:
 //
-//   @Fixtures([withDatabase])
+//   @Fixtures(withDatabase)
 //   module Saving {
 //     @Test savesAnOrder() = ...
-//     @Test @Fixtures([atNoon]) stampsTheOrder() = ...    // inside withDatabase, then atNoon
+//     @Test @Fixtures(atNoon) stampsTheOrder() = ...    // inside withDatabase, then atNoon
 //   }
-@Propagates @Repeatable annotation type Fixtures(fixtures: List<Function>)
+@Propagates @Repeatable annotation type Fixtures(vararg fixtures: Function)

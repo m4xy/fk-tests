@@ -18,19 +18,19 @@ inLedger<A>(test: @Ledger () -> A): A = {
   test()
 }
 
-@Test @Fixtures([inLedger]) @Ledger aTestRunsInsideItsFixtures() = {
+@Test @Fixtures(inLedger) @Ledger aTestRunsInsideItsFixtures() = {
   record("a")
   assertEquals(["a"], lines())
 }
 
 // What the tests in it do, which their fixtures answer.
-@Ledger @Fixtures([inLedger])
+@Ledger @Fixtures(inLedger)
 module Sections {
   @Test eachTestRunsInsideItsSectionsFixtures() = assertEquals([], lines())
 
-  @Test @Fixtures([opened]) itsOwnRunInsideThem() = assertEquals(["opened"], lines())
+  @Test @Fixtures(opened) itsOwnRunInsideThem() = assertEquals(["opened"], lines())
 
-  @Fixtures([opened])
+  @Fixtures(opened)
   module Nested {
     @Test andTheirSectionsToo() = {
       record("nested")

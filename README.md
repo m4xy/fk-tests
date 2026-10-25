@@ -65,10 +65,10 @@ inLedger<A>(test: @Ledger () -> A): A = {
   Ledger(record = line -> { kept = kept + [line] }, lines = () -> kept) { test() }
 }
 
-@Ledger @Fixtures([inLedger])
+@Ledger @Fixtures(inLedger)
 module Sections {
   @Test startsEmpty() = assertEquals([], lines())        // inside inLedger
-  @Test @Fixtures([opened]) seesItOpened() = ...          // inside inLedger, then opened
+  @Test @Fixtures(opened) seesItOpened() = ...          // inside inLedger, then opened
 }
 ```
 
