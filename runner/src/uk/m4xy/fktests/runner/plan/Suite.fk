@@ -1,2 +1,4 @@
+import fckt.io.Path
+
 // A file's tests, in the order they're declared.
-type Suite<@E>(file: String, cases: List<TestCase<@E>>)
+type Suite<@E>(file: Path, cases: List<TestCase<@E>>)

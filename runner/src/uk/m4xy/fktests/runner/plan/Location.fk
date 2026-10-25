@@ -1,2 +1,4 @@
+import fckt.io.Path
+
 // Where in its file something is.
-type Location(file: String, line: Int)
+type Location(file: Path, line: Int)

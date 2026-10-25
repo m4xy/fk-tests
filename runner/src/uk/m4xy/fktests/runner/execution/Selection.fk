@@ -1,6 +1,5 @@
-// Which tests run: all, or those a pattern names, by the test's name, sums, its file's, prices, or
-// both, prices.sums.
+// Which tests run: all, or those any of the selectors choose.
 type Selection {
   All,
-  Only(patterns: List<String>),
+  Only(selectors: List<Selector>),
 }

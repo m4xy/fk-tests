@@ -1,3 +1,5 @@
+import fckt.io.Path
+import fckt.io.Paths.*
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.reporting.*
@@ -6,29 +8,50 @@ import uk.m4xy.fktests.runner.reporting.*
 // fckt's main makes the plan of them with test, suite and plan, and gives it to main. Only that
 // program uses it, never a test.
 module Runner {
-  // A test: fckt's main makes one for each function marked @Test.
+  // A test: fckt's main makes one for each function marked @Test, in file, a path from the tests'
+  // folder.
   test<@E>(file: String, name: String, line: Int, body: @Fail @E () -> Unit): TestCase<@E> =
-    TestCase(TestId(file, name), Location(file, line), body)
+    TestCase(TestId(path(file), name), Location(path(file), line), body)
 
   // A file's tests.
-  suite<@E>(file: String, tests: List<TestCase<@E>>): Suite<@E> = Suite(file, tests)
+  suite<@E>(file: String, tests: List<TestCase<@E>>): Suite<@E> = Suite(path(file), tests)
 
   // The tests there are to run.
   plan<@E>(suites: List<Suite<@E>>): Plan<@E> = Plan(suites)
 
-  // Runs plan as args say, reported as they say, then exits with 1 if any test failed. args are
-  // patterns choosing which run, as Selection has them, and --report lines, to report as
-  // LineReport does, for another program; ConsoleReport, for people, if not.
-  @Console main<@E>(args: List<String>, plan: Plan<@E>): Unit = {
-    report = if (reportOf(args) == Lines) LineReport else ConsoleReport
-    summary = report { Execution.run(plan, selectionOf(args)) }
-    if (summary.failed > 0) stop(1)
+  // Runs plan as args say, reported as they say, then exits with 1 if any test failed, or 2 if args
+  // don't say what they mean. args choose which run, as selectorOf reads them, and --report lines
+  // reports as LineReport does, for another program; ConsoleReport, for people, if not.
+  @Console main<@E>(args: List<String>, plan: Plan<@E>): Unit = when (selectionOf(args)) {
+    Error(problem) -> {
+      println("fk-tests: $problem")
+      stop(2)
+    }
+    Ok(selection) -> {
+      report = if (reportOf(args) == Lines) LineReport else ConsoleReport
+      summary = report { Execution.run(plan, selection) }
+      if (summary.failed > 0) stop(1)
+    }
   }
 
-  // The tests args choose: those its patterns name, or all.
-  selectionOf(args: List<String>): Selection = {
-    patterns = withoutOptions(args)
-    if (patterns.isEmpty()) All else Only(patterns)
+  // The tests args choose: those their selectors do, or, without any, all.
+  selectionOf(args: List<String>): Result<Selection, String> = {
+    selectors = withoutOptions(args).map(arg -> selectorOf(arg))
+    when (selectors.find(s -> s.isError())) {
+      Some(Error(problem)) -> Error(problem)
+      else -> {
+        chosen = selectors.flatMap(s -> s.toOption().map(c -> [c]).getOrElse([]))
+        Ok(if (chosen.isEmpty()) All else Only(chosen))
+      }
+    }
+  }
+
+  // What an argument chooses, as pytest's are written: sums, every test of that name; prices.fk,
+  // every test in that file; prices.fk::sums, that one test.
+  selectorOf(arg: String): Result<Selector, String> = when (arg.split("::")) {
+    [file, name] -> if (isFile(file) && isName(name)) Ok(Exactly(TestId(path(file), name))) else Error(unreadable(arg))
+    [one] -> if (isFile(one)) Ok(File(path(one))) else if (isName(one)) Ok(Test(one)) else Error(unreadable(arg))
+    else -> Error(unreadable(arg))
   }
 
   // How args say to report: --report lines, for another program, or for people.
@@ -37,6 +60,13 @@ module Runner {
     ["--report", "lines", *_] -> Lines
     [_, *rest] -> reportOf(rest)
   }
+
+  private isFile(text: String): Boolean = text.endsWith(".fk") && text.length > 3
+
+  private isName(text: String): Boolean = !text.isEmpty() && text.toList().all(c -> c.isLetterOrDigit() || c == '_')
+
+  private unreadable(arg: String): String =
+    "can't tell which tests '$arg' means: a test's name, sums; a file, prices.fk; or a file's test, prices.fk::sums"
 
   private withoutOptions(args: List<String>): List<String> = when (args) {
     [] -> []

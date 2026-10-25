@@ -1,0 +1,12 @@
+import fckt.io.Path
+import uk.m4xy.fktests.runner.plan.TestId
+
+// What a test is chosen by.
+type Selector {
+  // Every test of that name.
+  Test(name: String),
+  // Every test in that file.
+  File(file: Path),
+  // That one test.
+  Exactly(id: TestId),
+}

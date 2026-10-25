@@ -14,10 +14,10 @@ plan = Runner.plan([Runner.suite("prices.fk", [
 heard(selection: Selection): List<String> = {
   var events = []
   TestEvents(
-    suiteStarted = suite -> { events = events + ["started $suite"] },
+    suiteStarted = suite -> { events = events + ["started ${suite.value}"] },
     testStarted = id -> { events = events + ["started ${id.name}"] },
     testFinished = result -> { events = events + ["finished ${result.id.name}: ${outcomeOf(result.outcome)}"] },
-    suiteFinished = suite -> { events = events + ["finished $suite"] },
+    suiteFinished = suite -> { events = events + ["finished ${suite.value}"] },
     completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped"] },
   ) { Execution.run(plan, selection) }
   events
@@ -45,5 +45,5 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
 // What isn't chosen is skipped, without being started.
 @Test whatIsntChosenIsSkipped() = assertEquals(
   ["started prices.fk", "started sums", "finished sums: passed", "finished prices.fk", "1 passed, 0 failed, 2 skipped"],
-  heard(Selection.Only(["sums"])),
+  heard(Selection.Only([Selector.Test("sums")])),
 )

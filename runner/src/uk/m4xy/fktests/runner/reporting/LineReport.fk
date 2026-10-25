@@ -1,3 +1,4 @@
+import fckt.io.Path
 import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
@@ -12,14 +13,14 @@ import uk.m4xy.fktests.runner.events.TestEvents
 //
 // A test's own output, which isn't, is on lines of its own between them.
 module LineReport : TestEvents {
-  @Console suiteStarted(suite: String): Unit = event(["suite-started", suite])
-  @Console testStarted(id: TestId): Unit = event(["test-started", id.file, id.name])
-  @Console testFinished(result: TestResult): Unit = event(["test-finished", result.id.file, result.id.name] + when (result.outcome) {
+  @Console suiteStarted(suite: Path): Unit = event(["suite-started", suite.value])
+  @Console testStarted(id: TestId): Unit = event(["test-started", id.file.value, id.name])
+  @Console testFinished(result: TestResult): Unit = event(["test-finished", result.id.file.value, result.id.name] + when (result.outcome) {
     Passed -> ["passed", result.millis.toString()]
     Failed(failure) -> ["failed", result.millis.toString(), failure.message]
     Skipped -> ["skipped", "0"]
   })
-  @Console suiteFinished(suite: String): Unit = event(["suite-finished", suite])
+  @Console suiteFinished(suite: Path): Unit = event(["suite-finished", suite.value])
   @Console completed(summary: Summary): Unit =
     event(["completed", summary.passed.toString(), summary.failed.toString(), summary.skipped.toString(), summary.millis.toString()])
 

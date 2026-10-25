@@ -1,17 +1,18 @@
+import fckt.io.Path
 import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
 
 // Reports a run for people: each file's tests under it, failed ones with why, then how many passed.
 module ConsoleReport : TestEvents {
-  @Console suiteStarted(suite: String): Unit = println(suite)
+  @Console suiteStarted(suite: Path): Unit = println(suite.value)
   testStarted(id: TestId): Unit = Unit
   @Console testFinished(result: TestResult): Unit = when (result.outcome) {
     Passed -> println("  passed ${result.id.name}")
     Failed(failure) -> println("  FAILED ${result.id.name}: ${failure.message}")
     Skipped -> Unit
   }
-  suiteFinished(suite: String): Unit = Unit
+  suiteFinished(suite: Path): Unit = Unit
   @Console completed(summary: Summary): Unit =
     println(if (summary.passed + summary.failed == 0) "no tests ran" else "${summary.passed} passed, ${summary.failed} failed")
 }

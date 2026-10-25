@@ -25,10 +25,14 @@ module Execution {
   // Whether selection chooses the test id is.
   selects(selection: Selection, id: TestId): Boolean = when (selection) {
     All -> true
-    Only(patterns) -> {
-      stem = id.file.removeSuffix(".fk")
-      patterns.any(p -> p == id.name || p == stem || p == "$stem.${id.name}")
-    }
+    Only(selectors) -> selectors.any(s -> chooses(s, id))
+  }
+
+  // Whether selector chooses the test id is.
+  chooses(selector: Selector, id: TestId): Boolean = when (selector) {
+    Test(name) -> id.name == name
+    File(file) -> id.file == file
+    Exactly(wanted) -> id == wanted
   }
 
   @TestEvents private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {

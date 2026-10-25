@@ -35,7 +35,7 @@ $ kiln build
     FAILED emptyIsZero: prices.fk line 5: expected:<0> but was:<1>
   1 passed, 1 failed
 BUILD FAILED: tests failed
-$ kiln test -- sumsItems      # or prices, or prices.sumsItems
+$ kiln test -- sumsItems      # or prices.fk, or prices.fk::sumsItems
 ```
 
 A test is a function with no parameters, marked `@Test`, in a file in `test`. A failed `assert`,
@@ -70,7 +70,10 @@ has `Runner` make a plan of them and run it. fckt and kiln know neither library;
 ..., runner = TestRunner(...))` takes others.
 
 `Execution` runs each test on its own, to a `TestResult`: passed, failed with a `Failure`, or
-skipped, as the `Selection` from the arguments chooses; then a `Summary`. It doesn't print: it
+skipped, as the `Selection` chooses; then a `Summary`. `Runner` reads the `Selection` from the
+arguments, a `Selector` each, written as pytest's are: `sums`, every test of that name;
+`prices.fk`, every test in that file; `prices.fk::sums`, that one test. Files are `Path`s, from the
+tests' folder. It doesn't print: it
 tells `TestEvents`, as each suite and test starts and finishes, and when the run's done. A handler
 reports them: `ConsoleReport`, for people; `LineReport`, an event a line, with `--report lines`,
 which the plugin reads, to show them under its task; or one a test makes, as the runner's own

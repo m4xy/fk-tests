@@ -1,28 +1,44 @@
+import fckt.io.Paths.*
 import uk.m4xy.fktests.api.Test
 import uk.m4xy.fktests.runner.Runner
-import uk.m4xy.fktests.runner.execution.Execution
-import uk.m4xy.fktests.runner.execution.Selection
+import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.reporting.Report
 
-sums = TestId("prices.fk", "sums")
+sums = TestId(path("prices.fk"), "sums")
 
-chosen(args: List<String>): Boolean = Execution.selects(Runner.selectionOf(args), sums)
+// Whether args choose sums, if they say what they mean.
+chosen(args: List<String>): Boolean = Execution.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
 
 @Test allRunWithoutArguments() = assert(chosen([]))
 
 @Test aTestIsChosenByName() = {
+  assertEquals(Ok(Selector.Test("sums")), Runner.selectorOf("sums"))
   assert(chosen(["sums"]))
   assert(!chosen(["empty"]))
 }
 
-@Test aTestIsChosenByFile() = {
-  assert(chosen(["prices"]))
-  assert(chosen(["prices.sums"]))
-  assert(!chosen(["receipts.sums"]))
+@Test aFileChoosesItsTests() = {
+  assertEquals(Ok(Selector.File(path("prices.fk"))), Runner.selectorOf("prices.fk"))
+  assert(chosen(["prices.fk"]))
+  // Paths to the same file are the same file.
+  assert(chosen(["./prices.fk"]))
+  assert(!chosen(["receipts.fk"]))
 }
 
-@Test optionsArentPatterns() = {
-  assertEquals(Selection.All, Runner.selectionOf(["--report", "lines"]))
+@Test aFilesTestIsChosenExactly() = {
+  assertEquals(Ok(Selector.Exactly(sums)), Runner.selectorOf("prices.fk::sums"))
+  assert(chosen(["prices.fk::sums"]))
+  assert(!chosen(["receipts.fk::sums"]))
+}
+
+@Test whatCantBeReadSaysSo() = {
+  assert(Runner.selectorOf("prices.sums").isError())
+  assert(Runner.selectorOf("prices.fk::").isError())
+  assert(Runner.selectionOf(["sums", "a::b::c"]).isError())
+}
+
+@Test optionsArentSelectors() = {
+  assertEquals(Ok(Selection.All), Runner.selectionOf(["--report", "lines"]))
   assert(Runner.reportOf(["sums", "--report", "lines"]) == Report.Lines)
 }

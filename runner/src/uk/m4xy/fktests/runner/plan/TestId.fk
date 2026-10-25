@@ -1,2 +1,4 @@
-// Which test: its name, and the file it's in, prices.fk.
-type TestId(file: String, name: String)
+import fckt.io.Path
+
+// Which test: its name, and the file it's in, as a path from the tests' folder, prices.fk.
+type TestId(file: Path, name: String)

@@ -1,3 +1,4 @@
+import fckt.io.Path
 import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.results.TestResult
 import uk.m4xy.fktests.runner.results.Summary
@@ -6,9 +7,9 @@ import uk.m4xy.fktests.runner.results.Summary
 // then how it went. Execution tells it; a handler reports it, as reporting's do, or a test of the
 // runner keeps it.
 effect TestEvents {
-  suiteStarted(suite: String): Unit
+  suiteStarted(suite: Path): Unit
   testStarted(id: TestId): Unit
   testFinished(result: TestResult): Unit
-  suiteFinished(suite: String): Unit
+  suiteFinished(suite: Path): Unit
   completed(summary: Summary): Unit
 }
