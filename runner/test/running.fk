@@ -1,10 +1,14 @@
-import uk.m4xy.fktests.Test
-import uk.m4xy.fktestsrunner.*
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.runner.Runner
+import uk.m4xy.fktests.runner.events.TestEvents
+import uk.m4xy.fktests.runner.execution.*
+import uk.m4xy.fktests.runner.results.*
 
-passing = TestCase(TestId("prices.fk", "sums"), Location("prices.fk", 3), () -> assert(1 + 1 == 2))
-failing = TestCase(TestId("prices.fk", "empty"), Location("prices.fk", 4), () -> assertEquals(1, 2))
-crashing = TestCase(TestId("prices.fk", "divides"), Location("prices.fk", 5), () -> assert(1 / 0 == 0))
-plan = Plan([Suite("prices.fk", [passing, failing, crashing])])
+plan = Runner.plan([Runner.suite("prices.fk", [
+  Runner.test("prices.fk", "sums", 3, () -> assert(1 + 1 == 2)),
+  Runner.test("prices.fk", "empty", 4, () -> assertEquals(1, 2)),
+  Runner.test("prices.fk", "divides", 5, () -> assert(1 / 0 == 0)),
+])])
 
 // What a run tells TestEvents, as a handler that keeps it has it.
 heard(selection: Selection): List<String> = {
@@ -15,7 +19,7 @@ heard(selection: Selection): List<String> = {
     testFinished = result -> { events = events + ["finished ${result.id.name}: ${outcomeOf(result.outcome)}"] },
     suiteFinished = suite -> { events = events + ["finished $suite"] },
     completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped"] },
-  ) { Testing.run(plan, selection) }
+  ) { Execution.run(plan, selection) }
   events
 }
 
@@ -30,7 +34,7 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
   [
     "started prices.fk",
     "started sums", "finished sums: passed",
-    "started empty", "finished empty: failed, running.fk line 5: expected:<1> but was:<2>",
+    "started empty", "finished empty: failed, running.fk line 9: expected:<1> but was:<2>",
     "started divides", "finished divides: failed, Division_by_zero",
     "finished prices.fk",
     "1 passed, 2 failed, 0 skipped",

@@ -1,12 +1,12 @@
 // fk-tests-runner: what runs tests written with fk-tests, for fk-tests-kiln's task, whose tests never
 // see it. Its own tests run with it, as it is here.
-import uk.m4xy.fktestskiln.*
-import uk.m4xy.fktestskiln.FkTests.*
+import uk.m4xy.fktests.kiln.*
+import uk.m4xy.fktests.kiln.FkTests.*
 
 plugins = [projectAt("../kiln")]
 
 project = Project(name = "fk-tests-runner", group = "uk.m4xy", version = "0.1.0")
 
 tasks = standardTasks + [
-  fkTests(uses = [projectAt("..")], runner = TestRunner([], "uk.m4xy.fktestsrunner.Testing", "uk.m4xy.fktests.Test")),
+  fkTests(uses = [projectAt("..")], runner = TestRunner([], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
 ]

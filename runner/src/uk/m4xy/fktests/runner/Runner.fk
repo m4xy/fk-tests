@@ -1,0 +1,48 @@
+import uk.m4xy.fktests.runner.plan.*
+import uk.m4xy.fktests.runner.execution.*
+import uk.m4xy.fktests.runner.reporting.*
+
+// Runs tests written with fk-tests, as fckt --test's runner, --runner uk.m4xy.fktests.runner.Runner:
+// fckt's main makes the plan of them with test, suite and plan, and gives it to main. Only that
+// program uses it, never a test.
+module Runner {
+  // A test: fckt's main makes one for each function marked @Test.
+  test<@E>(file: String, name: String, line: Int, body: @Fail @E () -> Unit): TestCase<@E> =
+    TestCase(TestId(file, name), Location(file, line), body)
+
+  // A file's tests.
+  suite<@E>(file: String, tests: List<TestCase<@E>>): Suite<@E> = Suite(file, tests)
+
+  // The tests there are to run.
+  plan<@E>(suites: List<Suite<@E>>): Plan<@E> = Plan(suites)
+
+  // Runs plan as args say, reported as they say, then exits with 1 if any test failed. args are
+  // patterns choosing which run, as Selection has them, and --report lines, to report as
+  // LineReport does, for another program; ConsoleReport, for people, if not.
+  @Console main<@E>(args: List<String>, plan: Plan<@E>): Unit = {
+    report = if (reportOf(args) == Lines) LineReport else ConsoleReport
+    summary = report { Execution.run(plan, selectionOf(args)) }
+    if (summary.failed > 0) stop(1)
+  }
+
+  // The tests args choose: those its patterns name, or all.
+  selectionOf(args: List<String>): Selection = {
+    patterns = withoutOptions(args)
+    if (patterns.isEmpty()) All else Only(patterns)
+  }
+
+  // How args say to report: --report lines, for another program, or for people.
+  reportOf(args: List<String>): Report = when (args) {
+    [] -> Readable
+    ["--report", "lines", *_] -> Lines
+    [_, *rest] -> reportOf(rest)
+  }
+
+  private withoutOptions(args: List<String>): List<String> = when (args) {
+    [] -> []
+    ["--report", _, *rest] -> withoutOptions(rest)
+    [a, *rest] -> [a] + withoutOptions(rest)
+  }
+
+  private external stop(code: Int): Unit = "exit code"
+}

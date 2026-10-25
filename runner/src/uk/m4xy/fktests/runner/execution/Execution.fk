@@ -1,16 +1,10 @@
-// Runs tests written with fk-tests, as fckt --test's runner, --runner uk.m4xy.fktestsrunner.Testing:
-// fckt's main gives it the plan of them. Each runs on its own, so one that fails doesn't stop the
-// others, telling TestEvents as it goes, and the program exits with 1 if any failed. Only that
-// program uses it, never a test.
-module Testing {
-  // Runs plan as args say: patterns choosing which run, as Selection has them, and --report lines,
-  // to report as LineReport does, for another program.
-  @Console main<@E>(args: List<String>, plan: Plan<@E>): Unit = {
-    report = if (reportOf(args) == Lines) LineReport else ConsoleReport
-    summary = report { run(plan, selectionOf(args)) }
-    if (summary.failed > 0) stop(1)
-  }
+import uk.m4xy.fktests.runner.plan.*
+import uk.m4xy.fktests.runner.results.*
+import uk.m4xy.fktests.runner.events.TestEvents
 
+// Running a plan: each test on its own, so one that fails doesn't stop the others, telling
+// TestEvents as it goes, to a summary of how it went.
+module Execution {
   // Runs what selection chooses of plan, each suite with any chosen, and says how it went.
   @TestEvents run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
     started = now()
@@ -26,6 +20,15 @@ module Testing {
     )
     completed(summary)
     summary
+  }
+
+  // Whether selection chooses the test id is.
+  selects(selection: Selection, id: TestId): Boolean = when (selection) {
+    All -> true
+    Only(patterns) -> {
+      stem = id.file.removeSuffix(".fk")
+      patterns.any(p -> p == id.name || p == stem || p == "$stem.${id.name}")
+    }
   }
 
   @TestEvents private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
@@ -53,34 +56,6 @@ module Testing {
     result
   }
 
-  // Whether selection chooses the test id is.
-  selects(selection: Selection, id: TestId): Boolean = when (selection) {
-    All -> true
-    Only(patterns) -> {
-      stem = id.file.removeSuffix(".fk")
-      patterns.any(p -> p == id.name || p == stem || p == "$stem.${id.name}")
-    }
-  }
-
-  // The tests args choose: those its patterns name, or all.
-  selectionOf(args: List<String>): Selection = {
-    patterns = withoutOptions(args)
-    if (patterns.isEmpty()) All else Only(patterns)
-  }
-
-  // How args say to report: --report lines, for another program, or for people.
-  reportOf(args: List<String>): Report = when (args) {
-    [] -> Readable
-    ["--report", "lines", *_] -> Lines
-    [_, *rest] -> reportOf(rest)
-  }
-
-  private withoutOptions(args: List<String>): List<String> = when (args) {
-    [] -> []
-    ["--report", _, *rest] -> withoutOptions(rest)
-    [a, *rest] -> [a] + withoutOptions(rest)
-  }
-
   private millisSince(started: Float): Int = ((now() - started) * 1000.0).toInt()
 
   // What stopped body, an assertion that failed or an OCaml exception, if anything did.
@@ -88,6 +63,4 @@ module Testing {
     "(fun f -> try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) body"
 
   private external now(): Float = "Unix.gettimeofday ()"
-
-  private external stop(code: Int): Unit = "exit code"
 }

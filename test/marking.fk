@@ -1,4 +1,4 @@
-import uk.m4xy.fktests.Test
+import uk.m4xy.fktests.api.Test
 
 @Test aMarkedFunctionRuns() = assert(1 + 1 == 2)
 

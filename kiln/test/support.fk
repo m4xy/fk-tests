@@ -32,15 +32,15 @@ import fckt.io.Processes.*
 // A build.fk whose tests are run by this repository's plugin and runner, and written with its fk-tests.
 @Process testedBuild(name: String): String = {
   repo = path(here()).resolve("..").value
-  """import uk.m4xy.fktestskiln.*
-import uk.m4xy.fktestskiln.FkTests.*
+  """import uk.m4xy.fktests.kiln.*
+import uk.m4xy.fktests.kiln.FkTests.*
 
 plugins = [projectAt("$repo/kiln")]
 
 project = Project(name = "$name")
 
 tasks = standardTasks + [
-  fkTests(uses = [projectAt("$repo")], runner = TestRunner([projectAt("$repo/runner")], "uk.m4xy.fktestsrunner.Testing", "uk.m4xy.fktests.Test")),
+  fkTests(uses = [projectAt("$repo")], runner = TestRunner([projectAt("$repo/runner")], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
 ]
 """
 }

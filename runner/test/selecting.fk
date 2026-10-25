@@ -1,24 +1,28 @@
-import uk.m4xy.fktests.Test
-import uk.m4xy.fktestsrunner.Testing
-import uk.m4xy.fktestsrunner.Selection
-import uk.m4xy.fktestsrunner.TestId
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.runner.Runner
+import uk.m4xy.fktests.runner.execution.Execution
+import uk.m4xy.fktests.runner.execution.Selection
+import uk.m4xy.fktests.runner.plan.TestId
+import uk.m4xy.fktests.runner.reporting.Report
 
 sums = TestId("prices.fk", "sums")
 
-@Test allRunWithoutArguments() = assert(Testing.selects(Testing.selectionOf([]), sums))
+chosen(args: List<String>): Boolean = Execution.selects(Runner.selectionOf(args), sums)
+
+@Test allRunWithoutArguments() = assert(chosen([]))
 
 @Test aTestIsChosenByName() = {
-  assert(Testing.selects(Testing.selectionOf(["sums"]), sums))
-  assert(!Testing.selects(Testing.selectionOf(["empty"]), sums))
+  assert(chosen(["sums"]))
+  assert(!chosen(["empty"]))
 }
 
 @Test aTestIsChosenByFile() = {
-  assert(Testing.selects(Testing.selectionOf(["prices"]), sums))
-  assert(Testing.selects(Testing.selectionOf(["prices.sums"]), sums))
-  assert(!Testing.selects(Testing.selectionOf(["receipts.sums"]), sums))
+  assert(chosen(["prices"]))
+  assert(chosen(["prices.sums"]))
+  assert(!chosen(["receipts.sums"]))
 }
 
 @Test optionsArentPatterns() = {
-  assertEquals(Selection.All, Testing.selectionOf(["--report", "lines"]))
-  assert(Testing.reportOf(["sums", "--report", "lines"]) == uk.m4xy.fktestsrunner.Report.Lines)
+  assertEquals(Selection.All, Runner.selectionOf(["--report", "lines"]))
+  assert(Runner.reportOf(["sums", "--report", "lines"]) == Report.Lines)
 }

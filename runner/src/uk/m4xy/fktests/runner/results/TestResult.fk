@@ -1,2 +1,4 @@
+import uk.m4xy.fktests.runner.plan.TestId
+
 // How a test went, and how long it took.
 type TestResult(id: TestId, outcome: Outcome, millis: Int)
