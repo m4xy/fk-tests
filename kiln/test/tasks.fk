@@ -12,7 +12,7 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
   till = project("till")
   write(till, "src/pricing/Prices.fk", prices)
   write(till, "test/prices.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2, 3]) == 6)\n@Test empty() = assert(Prices.total([]) == 0)\n")
-  write(till, "build.fk", testedBuild("till"))
+  testedProject(till, "till")
   built = kiln(till, ["build"]).value
   expectContains(built, "> Task :test\n  prices.fk\n    passed sums\n    passed empty\n  2 passed, 0 failed\n> Task :check\n> Task :build\nBUILD SUCCESSFUL\n")
   expectContains(kiln(till, ["check"]).value, "> Task :test\n  2 passed, 0 failed (up to date)\n")
@@ -24,7 +24,7 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
   till = project("failing")
   write(till, "src/pricing/Prices.fk", prices)
   write(till, "test/wrong.fk", "import uk.m4xy.fktests.api.Test\n\n@Test adds() = assertEquals(3, 1 + 1)\n")
-  write(till, "build.fk", testedBuild("failing"))
+  testedProject(till, "failing")
   wrong = kiln(till, ["build"])
   assertEquals(1, wrong.code)
   expectContains(wrong.value, "    FAILED adds: wrong.fk line 3: expected:<3> but was:<2>\n  0 passed, 1 failed\nBUILD FAILED: tests failed")
@@ -34,7 +34,7 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
 @Test @FileSystem @Process onlyTheTestsSeeWhatTheyreWrittenWith() = {
   till = project("seeing")
   write(till, "src/pricing/Prices.fk", prices)
-  write(till, "build.fk", testedBuild("seeing"))
+  testedProject(till, "seeing")
   write(till, "test/sneaky.fk", "import uk.m4xy.fktests.api.Test\nimport uk.m4xy.fktests.runner.Runner\n\n@Test sneaks() = Unit\n")
   expectContains(kiln(till, ["test"]).value, "uk.m4xy.fktests.runner runs the tests, so they can't use it")
   write(till, "test/sneaky.fk", "import uk.m4xy.fktests.api.Test\n\n@Test sneaks() = Unit\n")

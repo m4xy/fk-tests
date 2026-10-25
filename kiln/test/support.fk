@@ -29,20 +29,20 @@ import fckt.io.Processes.*
   target.writeText(text)
 }
 
-// A build.fk whose tests are run by this repository's plugin and runner, and written with its fk-tests.
-@Process testedBuild(name: String): String = {
+// A project, name, in folder, whose tests are run by this repository's plugin and runner, and
+// written with its fk-tests: its settings.fk and build.fk.
+@FileSystem @Process testedProject(folder: Path, name: String): Unit = {
   repo = path(here()).resolve("..").value
-  """import uk.m4xy.fktests.kiln.*
+  write(folder, "settings.fk", "settings = Settings(uses = [projectAt(\"$repo/kiln\")])\n")
+  write(folder, "build.fk", """import uk.m4xy.fktests.kiln.*
 import uk.m4xy.fktests.kiln.FkTests.*
-
-plugins = [projectAt("$repo/kiln")]
 
 project = Project(name = "$name")
 
-tasks = standardTasks + [
+tasks = [
   fkTests(uses = [projectAt("$repo")], runner = TestRunner([projectAt("$repo/runner")], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
 ]
-"""
+""")
 }
 
 // Runs kiln in folder with args: what it printed, and its exit code.

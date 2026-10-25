@@ -4,10 +4,9 @@
 import uk.m4xy.fktests.kiln.*
 import uk.m4xy.fktests.kiln.FkTests.*
 
-plugins = [projectAt(".")]
 
 project = Project(name = "fk-tests-kiln", group = "uk.m4xy", version = "0.1.0", dependencies = [kiln()])
 
-tasks = standardTasks + [
+tasks = [
   fkTests(uses = [projectAt("..")], runner = TestRunner([projectAt("../runner")], "uk.m4xy.fktests.runner.Runner", "uk.m4xy.fktests.api.Test")),
 ]

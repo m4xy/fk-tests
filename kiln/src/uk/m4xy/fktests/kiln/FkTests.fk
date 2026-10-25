@@ -11,12 +11,12 @@ import uk.m4xy.kiln.Dependencies.*
 import uk.m4xy.fktests.kiln.events.*
 
 // fk-tests, as a kiln plugin: a task that runs a project's functions marked @Test, as part of
-// check. In build.fk:
+// check. settings.fk has settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")]), and
+// build.fk:
 //
 //   import uk.m4xy.fktests.kiln.FkTests.*
 //
-//   plugins = [library("uk.m4xy:fk-tests-kiln:0.1.0")]
-//   tasks = standardTasks + [fkTests()]
+//   tasks = [fkTests()]
 module FkTests {
   // The task test: the functions marked @Test in folder's files, compiled by fckt to one program
   // that runner runs, each on its own. They see the project's packages and libraries, and uses,

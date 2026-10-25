@@ -16,14 +16,17 @@ A [kiln](https://github.com/m4xy/kiln) project runs them with fk-tests' plugin, 
 is a task part of `check`, so of `kiln build`:
 
 ```kotlin
+// settings.fk
+settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")])
+```
+
+```kotlin
 // build.fk
 import uk.m4xy.fktests.kiln.FkTests.*
 
-plugins = [library("uk.m4xy:fk-tests-kiln:0.1.0")]
-
 project = Project(name = "shop")
 
-tasks = standardTasks + [fkTests()]
+tasks = [fkTests()]
 ```
 
 ```
@@ -84,6 +87,6 @@ tests do, to see what a run did.
 
 ## Building
 
-Each project builds with kiln, its tests run by the plugin and runner as they are here:
-`kiln build` in each; `kiln publishLocal` in `runner`, here, then `kiln` publishes them to
-`~/.kiln/repository`, for projects to use.
+The three are one build, as `settings.fk` lists `runner` and `kiln` with the project here, and
+their build scripts use the plugin as it is here: `kiln build` here builds and tests them all, and
+`kiln publishLocal` publishes them to `~/.kiln/repository`, for projects to use.

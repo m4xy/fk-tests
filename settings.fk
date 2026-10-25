@@ -1,0 +1,6 @@
+// fk-tests is three projects: what tests are written with, here; the runner; and the kiln plugin,
+// which the build scripts here use as it is. kiln publishLocal here publishes them all.
+settings = Settings(
+  uses = [projectAt("kiln")],
+  projects = [path("runner"), path("kiln")],
+)
