@@ -1,5 +1,6 @@
 import fckt.io.Path
 import fckt.io.Paths.*
+import fckt.io.Process
 import fckt.time.Clock
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.execution.*
@@ -23,15 +24,15 @@ module Runner {
   // Runs plan as args say, reported as they say, then exits with 1 if any test failed, or 2 if args
   // don't say what they mean. args choose which run, as selectorOf reads them, and --report lines
   // reports as LineReport does, for another program; ConsoleReport, for people, if not.
-  @Console @Clock main<@E>(args: List<String>, plan: Plan<@E>): Unit = when (selectionOf(args)) {
+  @Console @Clock @Process main<@E>(args: List<String>, plan: Plan<@E>): Unit = when (selectionOf(args)) {
     Error(problem) -> {
       println("fk-tests: $problem")
-      stop(2)
+      exit(2)
     }
     Ok(selection) -> {
       report = if (reportOf(args) == Lines) LineReport else ConsoleReport
       summary = report { Execution.run(plan, selection) }
-      if (summary.failed > 0) stop(1)
+      if (summary.failed > 0) exit(1)
     }
   }
 
@@ -88,5 +89,4 @@ module Runner {
     [a, *rest] -> [a] + withoutOptions(rest)
   }
 
-  private external stop(code: Int): Unit = "exit code"
 }
