@@ -1,0 +1,55 @@
+import fckt.io.Path
+import fckt.io.FileSystem
+import fckt.io.Process
+import fckt.io.Exit
+import fckt.io.Paths.*
+import fckt.io.Files.*
+import fckt.io.Processes.*
+
+// What the tests share: projects to build, in build/test-projects, with the kiln KILN says, and
+// fk-tests, its runner and this plugin from this repository.
+
+@Process here(): String = run("pwd", []).value.trim()
+
+// A fresh folder for a test's project.
+@FileSystem @Process project(name: String): Path = {
+  folder = path(here()).resolve("build/test-projects").resolve(name)
+  folder.delete()
+  folder.makeDirs()
+  folder
+}
+
+// Writes text to file, in folder, making the folders it's in.
+@FileSystem write(folder: Path, file: String, text: String): Unit = {
+  target = folder.resolve(file)
+  when (target.parent) {
+    Some(parent) -> parent.makeDirs()
+    None -> Unit
+  }
+  target.writeText(text)
+}
+
+// A build.fk whose tests are run by this repository's plugin and runner, and written with its fk-tests.
+@Process testedBuild(name: String): String = {
+  repo = path(here()).resolve("..").value
+  """import uk.m4xy.fktestskiln.*
+import uk.m4xy.fktestskiln.FkTests.*
+
+plugins = [projectAt("$repo/kiln")]
+
+project = Project(name = "$name")
+
+tasks = standardTasks + [
+  fkTests(uses = [projectAt("$repo")], runner = TestRunner([projectAt("$repo/runner")], "uk.m4xy.fktestsrunner.Testing", "uk.m4xy.fktests.Test")),
+]
+"""
+}
+
+// Runs kiln in folder with args: what it printed, and its exit code.
+@Process kiln(folder: Path, args: List<String>): Exit<String> = {
+  kiln = env("KILN").getOrElse("kiln")
+  run("sh", ["-c", "cd \"\$1\" && shift && exec \"\$@\" 2>&1", "sh", folder.value, kiln] + args)
+}
+
+// Fails, saying what was expected and what there was, unless text contains part.
+expectContains(text: String, part: String): Unit = if (!text.contains(part)) error("expected to find:\n$part\nin:\n$text")

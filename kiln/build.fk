@@ -1,0 +1,13 @@
+// fk-tests-kiln: fk-tests as a kiln plugin, whose fkTests() makes the task that runs a project's
+// functions marked @Test. It makes tasks with kiln's library, which kiln has. Its own tests use it,
+// fk-tests and the runner, from here.
+import uk.m4xy.fktestskiln.*
+import uk.m4xy.fktestskiln.FkTests.*
+
+plugins = [projectAt(".")]
+
+project = Project(name = "fk-tests-kiln", group = "uk.m4xy", version = "0.1.0", dependencies = [kiln()])
+
+tasks = standardTasks + [
+  fkTests(uses = [projectAt("..")], runner = TestRunner([projectAt("../runner")], "uk.m4xy.fktestsrunner.Testing", "uk.m4xy.fktests.Test")),
+]

@@ -1,0 +1,45 @@
+import fckt.io.FileSystem
+import fckt.io.Process
+import fckt.io.Paths.*
+import fckt.io.Files.*
+import uk.m4xy.fktests.Test
+
+prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
+
+// The functions marked @Test run as part of check, so of build; what's up to date doesn't run again,
+// and what follows -- chooses which do.
+@Test @FileSystem @Process testsArePartOfCheck() = {
+  till = project("till")
+  write(till, "src/pricing/Prices.fk", prices)
+  write(till, "test/prices.fk", "import uk.m4xy.fktests.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2, 3]) == 6)\n@Test empty() = assert(Prices.total([]) == 0)\n")
+  write(till, "build.fk", testedBuild("till"))
+  built = kiln(till, ["build"]).value
+  expectContains(built, "> Task :test\n  prices.fk\n    passed sums\n    passed empty\n  2 passed, 0 failed\n> Task :check\n> Task :build\nBUILD SUCCESSFUL\n")
+  expectContains(kiln(till, ["check"]).value, "> Task :test\n  2 passed, 0 failed (up to date)\n")
+  expectContains(kiln(till, ["test", "--", "empty"]).value, "> Task :test\n  prices.fk\n    passed empty\n  1 passed, 0 failed\n")
+}
+
+// A failing test fails the build.
+@Test @FileSystem @Process aFailingTestFailsTheBuild() = {
+  till = project("failing")
+  write(till, "src/pricing/Prices.fk", prices)
+  write(till, "test/wrong.fk", "import uk.m4xy.fktests.Test\n\n@Test adds() = assertEquals(3, 1 + 1)\n")
+  write(till, "build.fk", testedBuild("failing"))
+  wrong = kiln(till, ["build"])
+  assertEquals(1, wrong.code)
+  expectContains(wrong.value, "    FAILED adds: wrong.fk line 3: expected:<3> but was:<2>\n  0 passed, 1 failed\nBUILD FAILED: tests failed")
+}
+
+// The tests see what they're written with, but not the runner; the program sees neither.
+@Test @FileSystem @Process onlyTheTestsSeeWhatTheyreWrittenWith() = {
+  till = project("seeing")
+  write(till, "src/pricing/Prices.fk", prices)
+  write(till, "build.fk", testedBuild("seeing"))
+  write(till, "test/sneaky.fk", "import uk.m4xy.fktests.Test\nimport uk.m4xy.fktestsrunner.Testing\n\n@Test sneaks() = Unit\n")
+  expectContains(kiln(till, ["test"]).value, "uk.m4xy.fktestsrunner runs the tests, so they can't use it")
+  write(till, "test/sneaky.fk", "import uk.m4xy.fktests.Test\n\n@Test sneaks() = Unit\n")
+  kiln(till, ["test"])
+  expectContains(till.resolve(".kiln/scopes/tests").readText(), "folder test\n")
+  write(till, "src/main.fk", "import uk.m4xy.fktests.Test\n\nmain() = println(\"till\")\n")
+  expectContains(kiln(till, ["compile"]).value, "uk.m4xy.fktests")
+}

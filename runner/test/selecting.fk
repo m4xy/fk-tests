@@ -1,10 +1,14 @@
+import uk.m4xy.fktests.Test
 import uk.m4xy.fktestsrunner.Testing
 
-// The arguments choose which tests run.
-main() = {
-  assert(Testing.selected([], "prices.fk", "sums"))
+@Test allRunWithoutArguments() = assert(Testing.selected([], "prices.fk", "sums"))
+
+@Test aTestIsChosenByName() = {
   assert(Testing.selected(["sums"], "prices.fk", "sums"))
   assert(!Testing.selected(["empty"], "prices.fk", "sums"))
+}
+
+@Test aTestIsChosenByFile() = {
   assert(Testing.selected(["prices"], "prices.fk", "sums"))
   assert(Testing.selected(["prices.sums"], "prices.fk", "sums"))
   assert(!Testing.selected(["receipts.sums"], "prices.fk", "sums"))

@@ -1,0 +1,6 @@
+import uk.m4xy.kiln.Dependency
+
+// What runs tests, apart from what they're written with: what it uses, which only the program made
+// from the tests sees; the module that runs them; and the annotation that marks a test. A runner
+// that uses nothing is the project's own, whose tests use it.
+type TestRunner(uses: List<Dependency>, runner: String, marker: String)

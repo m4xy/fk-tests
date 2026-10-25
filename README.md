@@ -12,15 +12,23 @@ import pricing.Prices
 @Test emptyIsZero() = assertEquals(0, Prices.total([]))
 ```
 
-A project uses it for its tests only, which its programs and packages don't see:
+A [kiln](https://github.com/m4xy/kiln) project runs them with fk-tests' plugin, whose `fkTests()`
+is a task part of `check`, so of `kiln build`:
 
 ```kotlin
 // build.fk
-project = Project(name = "shop", testDependencies = [library("uk.m4xy:fk-tests:0.1.0")])
+import uk.m4xy.fktestskiln.FkTests.*
+
+plugins = [library("uk.m4xy:fk-tests-kiln:0.1.0")]
+
+project = Project(name = "shop")
+
+tasks = standardTasks + [fkTests()]
 ```
 
 ```
-$ kiln test
+$ kiln build
+> Task :compile
 > Task :test
   prices.fk
     passed sumsItems
@@ -36,20 +44,21 @@ The other files there are what the tests share.
 
 ## How it works
 
-What tests are written with and what runs them are apart:
+Three projects, each a library of its own:
 
-- **fk-tests**, here, is what tests use: `@Test`, and, later, assertions and fixtures. A project's
-  tests depend on it, and nothing else does.
-- **fk-tests-runner**, in `runner`, runs them: each on its own, choosing which as the arguments
-  say, then how they went. kiln adds it when it tests a project; the tests never see it, and fckt
-  stops them using it.
+| Project | | |
+| --- | --- | --- |
+| fk-tests | here | What tests are written with: `@Test`. The tests see it, and nothing else does. |
+| fk-tests-runner | `runner` | What runs them: each on its own, choosing which as the arguments say, then how they went. Only the program made from the tests uses it; the tests never see it. |
+| fk-tests-kiln | `kiln` | The kiln plugin: `fkTests()`, the task that compiles and runs them. Only it knows the other two. |
 
-[kiln](https://github.com/m4xy/kiln) compiles the tests with `fckt --test test --marker
-uk.m4xy.fktests.Test --runner uk.m4xy.fktestsrunner.Testing`: fckt finds the functions marked
-`@Test`, and makes a main that gives each to the runner. fckt knows neither library, so others can
-take their places, with `testRunner` in `build.fk`.
+The task compiles the tests with `fckt --test test --marker uk.m4xy.fktests.Test --runner
+uk.m4xy.fktestsrunner.Testing`: fckt finds the functions marked `@Test`, and makes a main that
+gives each to the runner. fckt and kiln know neither library; `fkTests(uses = ..., runner =
+TestRunner(...))` takes others.
 
 ## Building
 
-`kiln build`, here and in `runner`, compiles and tests each; `kiln publishLocal` in each publishes
-it to `~/.kiln/repository`, for projects to use.
+Each project builds with kiln, its tests run by the plugin and runner as they are here:
+`kiln build` in each; `kiln publishLocal` in `runner`, here, then `kiln` publishes them to
+`~/.kiln/repository`, for projects to use.
