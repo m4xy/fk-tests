@@ -75,7 +75,7 @@ module Runner {
 
   private isFile(text: String): Boolean = text.endsWith(".fk") && text.length > 3
 
-  private isName(text: String): Boolean = !text.isEmpty() && text.toList().all(c -> c.isLetterOrDigit() || c == '_')
+  private isName(text: String): Boolean = text.isNotEmpty() && text.toList().all(c -> c.isLetterOrDigit() || c == '_')
 
   private isSection(text: String): Boolean = isName(text) && text.toList().firstOrNone().map(c -> c.isUpperCase()).getOrElse(false)
 

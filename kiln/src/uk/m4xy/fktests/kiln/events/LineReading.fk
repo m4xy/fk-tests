@@ -15,5 +15,5 @@ module LineReading {
 
   // A field as it was before LineReport escaped it: \t, \n and \\ back to a tab, a newline and \.
   private unescape(field: String): String =
-    field.split("\\\\").map(part -> part.split("\\t").joinToString("\t").split("\\n").joinToString("\n")).joinToString("\\")
+    field.split("\\\\").map(part -> part.replace("\\t", "\t").replace("\\n", "\n")).joinToString("\\")
 }

@@ -27,5 +27,5 @@ module LineReport : TestEvents {
 
   @Console private event(fields: List<String>): Unit = println((["##fk"] + fields.map(f -> escape(f))).joinToString("\t"))
 
-  private escape(field: String): String = field.split("\\").joinToString("\\\\").split("\t").joinToString("\\t").split("\n").joinToString("\\n")
+  private escape(field: String): String = field.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 }
