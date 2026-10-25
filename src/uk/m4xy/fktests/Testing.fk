@@ -1,0 +1,51 @@
+// Runs the tests fckt --test finds, as their runner, --runner uk.m4xy.fktests.Testing: each on its
+// own, so one that fails doesn't stop the others, then how many passed, and exit code 1 if any
+// failed. A program's arguments choose which run: a test's name, sumsItems, its file's, prices, or
+// both, prices.sumsItems; without any, all do.
+module Testing {
+  // How a test went.
+  type Outcome {
+    Passed,
+    Failed,
+    Skipped,
+  }
+
+  // Whether the test [name] in [file], prices.fk, runs, as the arguments choose.
+  selected(args: List<String>, file: String, name: String): Boolean = {
+    stem = file.removeSuffix(".fk")
+    args.isEmpty() || args.any(a -> a == name || a == stem || a == "$stem.$name")
+  }
+
+  // Names [file] before its tests, if any of them run.
+  @Console section(args: List<String>, file: String, names: List<String>): Unit =
+    if (names.any(n -> selected(args, file, n))) println(file)
+
+  // Runs [body], the test [name] in [file], if it's chosen, and says how it went.
+  @Console check(args: List<String>, file: String, name: String, body: @Fail () -> Unit): Outcome =
+    if (!selected(args, file, name)) Skipped
+    else when (attempt { caught(body).map(reason -> fail(reason)).getOrElse(Unit) }) {
+      Ok(_) -> {
+        println("  passed $name")
+        Passed
+      }
+      Error(reason) -> {
+        println("  FAILED $name: $reason")
+        Failed
+      }
+    }
+
+  // How many passed and failed, ending the program with code 1 if any failed.
+  @Console finish(outcomes: List<Outcome>): Unit = {
+    passed = outcomes.filter(o -> o == Passed).size
+    failed = outcomes.filter(o -> o == Failed).size
+    if (passed + failed == 0) println("no tests ran")
+    else println("$passed passed, $failed failed")
+    if (failed > 0) stop(1)
+  }
+
+  // What stopped [body], an assertion that failed or an OCaml exception, if anything did.
+  private external caught(body: () -> Unit): Option<String> =
+    "(fun f -> try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) body"
+
+  private external stop(code: Int): Unit = "exit code"
+}

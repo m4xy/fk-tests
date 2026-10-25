@@ -1,0 +1,3 @@
+// A test: a function with no parameters, @Test sumsItems() = assert(total([1, 2, 3]) == 6), which
+// fckt --test finds in a folder's files, and Testing runs.
+annotation type Test

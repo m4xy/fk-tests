@@ -1,0 +1,3 @@
+// fk-tests: tests for fckt, as functions marked @Test. kiln publishLocal publishes it, and a project
+// uses it for its tests: Project(testDependencies = [library("uk.m4xy:fk-tests:0.1.0")]).
+project = Project(name = "fk-tests", group = "uk.m4xy", version = "0.1.0")
