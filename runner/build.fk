@@ -1,0 +1,3 @@
+// fk-tests-runner: what runs tests written with fk-tests. kiln uses it for a project's tests, which
+// never see it.
+project = Project(name = "fk-tests-runner", group = "uk.m4xy", version = "0.1.0")

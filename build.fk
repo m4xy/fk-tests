@@ -1,3 +1,9 @@
-// fk-tests: tests for fckt, as functions marked @Test. kiln publishLocal publishes it, and a project
-// uses it for its tests: Project(testDependencies = [library("uk.m4xy:fk-tests:0.1.0")]).
-project = Project(name = "fk-tests", group = "uk.m4xy", version = "0.1.0")
+// fk-tests: what tests for fckt are written with, @Test. kiln publishLocal publishes it, and a
+// project uses it for its tests: Project(testDependencies = [library("uk.m4xy:fk-tests:0.1.0")]).
+// What runs them is fk-tests-runner, in runner, which its own tests use from there.
+project = Project(
+  name = "fk-tests",
+  group = "uk.m4xy",
+  version = "0.1.0",
+  testRunner = TestRunner(projectAt("runner"), runner = "uk.m4xy.fktestsrunner.Testing", marker = "uk.m4xy.fktests.Test"),
+)

@@ -36,13 +36,20 @@ The other files there are what the tests share.
 
 ## How it works
 
-[kiln](https://github.com/m4xy/kiln) compiles the tests with `fckt --test test --runner
-uk.m4xy.fktests.Testing`: fckt finds the functions marked with the runner's package's `Test`, and
-makes a main that gives each to `Testing`, which runs it, says how it went, and exits with 1 if any
-failed. fckt knows no test library, so another can take its place, with `testRunner` in
-`build.fk`.
+What tests are written with and what runs them are apart:
+
+- **fk-tests**, here, is what tests use: `@Test`, and, later, assertions and fixtures. A project's
+  tests depend on it, and nothing else does.
+- **fk-tests-runner**, in `runner`, runs them: each on its own, choosing which as the arguments
+  say, then how they went. kiln adds it when it tests a project; the tests never see it, and fckt
+  stops them using it.
+
+[kiln](https://github.com/m4xy/kiln) compiles the tests with `fckt --test test --marker
+uk.m4xy.fktests.Test --runner uk.m4xy.fktestsrunner.Testing`: fckt finds the functions marked
+`@Test`, and makes a main that gives each to the runner. fckt knows neither library, so others can
+take their places, with `testRunner` in `build.fk`.
 
 ## Building
 
-`kiln build` compiles and tests it; `kiln publishLocal` publishes it to `~/.kiln/repository`, for
-projects to use.
+`kiln build`, here and in `runner`, compiles and tests each; `kiln publishLocal` in each publishes
+it to `~/.kiln/repository`, for projects to use.

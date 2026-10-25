@@ -1,7 +1,7 @@
-// Runs the tests fckt --test finds, as their runner, --runner uk.m4xy.fktests.Testing: each on its
-// own, so one that fails doesn't stop the others, then how many passed, and exit code 1 if any
-// failed. A program's arguments choose which run: a test's name, sumsItems, its file's, prices, or
-// both, prices.sumsItems; without any, all do.
+// Runs tests written with fk-tests, as fckt --test's runner, --runner uk.m4xy.fktestsrunner.Testing:
+// each on its own, so one that fails doesn't stop the others, then how many passed, and exit code
+// 1 if any failed. The program's arguments choose which run: a test's name, sumsItems, its file's,
+// prices, or both, prices.sumsItems; without any, all do. Only that program uses it, never a test.
 module Testing {
   // How a test went.
   type Outcome {
