@@ -1,5 +1,6 @@
 import fckt.io.Path
 import fckt.io.Paths.*
+import uk.m4xy.kiln.TaskName
 
 // How a project's tests are run: where they are, with what they're written with, and what runs
 // them. A build configures FkTests with a module that follows it, saying only what isn't as these
@@ -15,9 +16,9 @@ spec TestConfiguration {
   roots(): List<TestRoot> = [TestRoot(path("test"))]
   // What runs them.
   runner(): TestRunner = TestRunner()
-  // The tasks that make what they run, besides their own code, as compile makes the project's
-  // program: each runs first.
-  dependsOn(): List<String> = []
+  // The tasks that make what they run, besides their own code, as FcktTasks.compile makes the
+  // project's program: each runs first.
+  dependsOn(): List<TaskName> = []
   // What they run or read besides their own code, as the program compile makes: where one has
   // changed, they run again.
   inputs(): List<Path> = []

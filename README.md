@@ -134,7 +134,7 @@ that program among their inputs, which run them again when it changes:
 
 ```kotlin
 module KilnTests : TestConfiguration {
-  dependsOn(): List<String> = ["compile"]
+  dependsOn(): List<TaskName> = [FcktTasks.compile]
   inputs(): List<Path> = [path("build/bin/kiln")]
 }
 ```

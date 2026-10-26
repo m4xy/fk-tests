@@ -1,0 +1,7 @@
+import uk.m4xy.kiln.*
+
+// FkTests' task, as others name it: a script's task that needs the tests run first depends on
+// TestTasks.test.
+module TestTasks {
+  test: TaskName = Named("test")
+}

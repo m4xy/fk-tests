@@ -19,7 +19,7 @@ import fckt.text.Digests.*
 module Testing {
   // Runs the tests in each of roots with runner, those of a root together, in a project laid out as
   // layout says; files, what they run or read besides their own code.
-  @Building runAll(build: Build, layout: FcktLayout, roots: List<TestRoot>, runner: TestRunner, files: List<Path>): Unit =
+  @Building runAll(build: Invocation, layout: FcktLayout, roots: List<TestRoot>, runner: TestRunner, files: List<Path>): Unit =
     roots.forEach { root ->
       if (roots.size > 1) println("  ${root.folder.value}/")
       test(build, layout, root.uses, root.folder, runner, files)
@@ -27,7 +27,7 @@ module Testing {
 
   // Runs the tests, unless they passed, would be compiled from what they were, and files are what
   // they were, and nothing chooses which.
-  @Building private test(build: Build, layout: FcktLayout, uses: List<Dependency>, folder: Path, runner: TestRunner, files: List<Path>): Unit = {
+  @Building private test(build: Invocation, layout: FcktLayout, uses: List<Dependency>, folder: Path, runner: TestRunner, files: List<Path>): Unit = {
     project = build.project
     marked = if (folder.isDirectory()) folder.listFiles().filter { it.extension == "fk" && hasTests(it) } else []
     if (marked.isEmpty()) println("  no tests in ${folder.value}")

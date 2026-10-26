@@ -17,10 +17,10 @@ module FkTests(Configuration: TestConfiguration = StandardTests, Code: FcktConfi
 
   tasks(project: Project): List<Task> = [
     Task(
-      "test",
+      TestTasks.test,
       "Runs the functions marked @Test in ${Configuration.roots().map(root -> root.folder.value).joinToString(", ")}",
       dependsOn = Configuration.dependsOn(),
-      partOf = ["check"],
+      partOf = [Check],
       action = build -> Testing.runAll(build, Code.layout(), Configuration.roots(), Configuration.runner(), Configuration.inputs()),
     ),
   ]
