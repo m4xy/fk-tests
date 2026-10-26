@@ -3,6 +3,7 @@ import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.plan.TestIds.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
+import fckt.io.Console
 
 // Reports a run for another program, as fk-tests-kiln: an event a line, starting ##fk, then its
 // fields, a tab before each, with what would end a field or a line escaped, \t, \n and \\:

@@ -9,6 +9,7 @@ import uk.m4xy.kiln.Builds.*
 import uk.m4xy.kiln.Compiling.*
 import uk.m4xy.kiln.Dependencies.*
 import uk.m4xy.fktests.kiln.events.*
+import fckt.effects.Fail
 
 // Running a project's tests: each root's, compiled by fckt to a program that the runner runs, each
 // test on its own.
@@ -43,7 +44,7 @@ module Testing {
       } else {
         passed.delete()
         buildProgram(project, program, inputs) { ml ->
-          runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--fixtures", runner.fixtures, "--runner", runner.runner, "-o", ml.value, "--separate"] +
+          runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--fixtures", runner.fixtures, "--runner", runner.runner, "-o", ml.value, "--separate", "--no-std"] +
             (if (runner.uses.isEmpty()) ["--runner-tests"] else []) +
             sourceArgs(project.sources, resolved.roots) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)

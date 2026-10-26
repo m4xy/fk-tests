@@ -5,6 +5,8 @@ import fckt.time.Clock
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.reporting.*
+import fckt.effects.Fail
+import fckt.io.Console
 
 // Runs tests written with fk-tests, as fckt --test's runner, --runner uk.m4xy.fktests.runner.Runner:
 // fckt's main makes the plan of them with test, suite and plan, and gives it to main. Only that

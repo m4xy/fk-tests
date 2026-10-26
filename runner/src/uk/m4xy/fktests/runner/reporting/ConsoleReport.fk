@@ -3,6 +3,7 @@ import uk.m4xy.fktests.runner.plan.TestId
 import uk.m4xy.fktests.runner.plan.TestIds.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
+import fckt.io.Console
 
 // Reports a run for people: each file's tests under it, failed ones with why, then how many passed.
 module ConsoleReport : TestEvents {

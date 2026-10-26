@@ -1,4 +1,5 @@
 import uk.m4xy.fktests.api.Test
+import fckt.effects.Fail
 
 @Test aMarkedFunctionRuns() = assert(1 + 1 == 2)
 
