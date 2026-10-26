@@ -10,20 +10,22 @@ import uk.m4xy.kiln.Compiling.*
 import uk.m4xy.kiln.Dependencies.*
 import uk.m4xy.fktests.kiln.events.*
 import fckt.effects.Fail
+import fckt.text.Digests.*
 
 // Running a project's tests: each root's, compiled by fckt to a program that the runner runs, each
 // test on its own.
 module Testing {
-  // Runs the tests in each of roots with runner, those of a root together.
-  @Building runAll(build: Build, roots: List<TestRoot>, runner: TestRunner): Unit =
+  // Runs the tests in each of roots with runner, those of a root together; files, what they run or
+  // read besides their own code.
+  @Building runAll(build: Build, roots: List<TestRoot>, runner: TestRunner, files: List<Path>): Unit =
     roots.forEach { root ->
       if (roots.size > 1) println("  ${root.folder.value}/")
-      test(build, root.uses, root.folder, runner)
+      test(build, root.uses, root.folder, runner, files)
     }
 
-  // Runs the tests, unless they passed and would be compiled from what they were, and nothing
-  // chooses which.
-  @Building private test(build: Build, uses: List<Dependency>, folder: Path, runner: TestRunner): Unit = {
+  // Runs the tests, unless they passed, would be compiled from what they were, and files are what
+  // they were, and nothing chooses which.
+  @Building private test(build: Build, uses: List<Dependency>, folder: Path, runner: TestRunner, files: List<Path>): Unit = {
     project = build.project
     marked = if (folder.isDirectory()) folder.listFiles().filter { it.extension == "fk" && hasTests(it) } else []
     if (marked.isEmpty()) println("  no tests in ${folder.value}")
@@ -34,7 +36,8 @@ module Testing {
       // The tests see what's internal to the project, as its own code does, but not to the projects it uses.
       // For editors: the tests' files see what they're written with, but not the runner.
       rememberScope(folder.name, folder, linking.libraries.filter { tests.libraries.contains(it.coordinates) })
-      inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker
+      inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker +
+        files.map { f -> "${f.value} ${if (f.exists()) f.readBytes().md5() else "missing"}" }.joinToString("\n")
       output = project.output.resolve("tests").resolve(folder.name)
       program = output.resolve("tests")
       passed = output.resolve("passed")

@@ -14,8 +14,9 @@ module FkTests(Configuration: TestConfiguration = StandardTests) : Plugin {
     Task(
       "test",
       "Runs the functions marked @Test in ${Configuration.roots().map(root -> root.folder.value).joinToString(", ")}",
+      dependsOn = Configuration.dependsOn(),
       partOf = ["check"],
-      action = build -> Testing.runAll(build, Configuration.roots(), Configuration.runner()),
+      action = build -> Testing.runAll(build, Configuration.roots(), Configuration.runner(), Configuration.inputs()),
     ),
   ]
 }

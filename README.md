@@ -115,6 +115,17 @@ module Mine : TestConfiguration {
 plugins = [FkTests(Mine)]
 ```
 
+Tests that run something besides their own code say so, so they never pass against an old copy of
+it: kiln's run the kiln its `compile` makes, so its build has them depend on that task, and count
+that program among their inputs, which run them again when it changes:
+
+```kotlin
+module KilnTests : TestConfiguration {
+  dependsOn(): List<String> = ["compile"]
+  inputs(): List<Path> = [path("build/bin/kiln")]
+}
+```
+
 `Execution` runs each test on its own, to a `TestResult`: passed, failed with a `Failure`, or
 skipped, as the `Selection` chooses; then a `Summary`. `Runner` reads the `Selection` from the
 arguments, a `Selector` each, written as pytest's are: `sums`, every test of that name;

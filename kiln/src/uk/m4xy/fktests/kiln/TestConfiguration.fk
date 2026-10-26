@@ -1,3 +1,4 @@
+import fckt.io.Path
 import fckt.io.Paths.*
 
 // How a project's tests are run: where they are, with what they're written with, and what runs
@@ -14,4 +15,10 @@ spec TestConfiguration {
   roots(): List<TestRoot> = [TestRoot(path("test"))]
   // What runs them.
   runner(): TestRunner = TestRunner()
+  // The tasks that make what they run, besides their own code, as compile makes the project's
+  // program: each runs first.
+  dependsOn(): List<String> = []
+  // What they run or read besides their own code, as the program compile makes: where one has
+  // changed, they run again.
+  inputs(): List<Path> = []
 }
