@@ -46,6 +46,14 @@ one: its section, as `Totals.sumsItems`. A failed `assert`, `fail(...)` or an ex
 that test; its effects are main's, handled as main's are. The other files there are what the tests
 share.
 
+## Formats
+
+`Formats.assertReadsBack(format, value)` fails unless a `Format`, the standard library's way of
+writing a value as text and reading it back, reads back what it writes: one check for any format,
+as `assertReadsBack(SettingsText, settings)`. It says what went wrong as the format writes it, as
+that's all that can show any format's values; `readBackProblem(format, value)` gives that, or
+`None`, without failing.
+
 ## Fixtures
 
 A test runs inside the fixtures `@Fixtures` lists on it, and on its sections: functions that each

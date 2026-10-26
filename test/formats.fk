@@ -1,0 +1,38 @@
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.api.Formats.*
+import fckt.text.Format
+
+// Numbers, written in words up to two, which can't read back what they can't write.
+module Words : Format {
+  type T = Int
+  of(value: Int): String = when (value) {
+    1 -> "one"
+    2 -> "two"
+    else -> "many"
+  }
+  read(text: String): Result<Int, String> = when (text) {
+    "one" -> Ok(1)
+    "two" -> Ok(2)
+    "many" -> Ok(3)
+    else -> Error("'$text' isn't a number")
+  }
+}
+
+// Shouted, and read back as it was.
+module Shouting : Format {
+  type T = String
+  of(value: String): String = value.uppercase()
+  read(text: String): Result<String, String> = if (text.isEmpty()) Error("nothing was said") else Ok(text.lowercase())
+}
+
+@Test whatsReadBackAsItWasIsFine() = {
+  assertReadsBack(Words, 2)
+  assertReadsBack(Shouting, "hello")
+  assertEquals(None, readBackProblem(Words, 1))
+}
+
+@Test whatIsntSaysHowAsTheFormatWritesIt() = {
+  assertEquals(Some("'many' was read back as something else, which is written the same"), readBackProblem(Words, 7))
+  assertEquals(Some("'HELLO' was read back as something else, which is written the same"), readBackProblem(Shouting, "Hello"))
+  assertEquals(Some("'' wasn't read back: nothing was said"), readBackProblem(Shouting, ""))
+}
