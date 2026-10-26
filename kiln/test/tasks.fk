@@ -53,7 +53,8 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
   write(till, "integration/till.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test rings() = assert(Prices.total([5]) == 5)\n")
   testedProject(till, "roots")
   repo = path(here()).resolve("..").value
-  write(till, "build.fk", """import uk.m4xy.fktests.kiln.*
+  write(till, "build.fk", """import uk.m4xy.kiln.fckt.Fckt
+import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "roots")
 
@@ -62,7 +63,7 @@ module Both : TestConfiguration {
   runner(): TestRunner = TestRunner(uses = [projectAt("$repo/runner")])
 }
 
-plugins = [FkTests(Both)]
+plugins = [Fckt(), FkTests(Both)]
 """)
   expectContains(kiln(till, ["tasks"]).value, "  test - Runs the functions marked @Test in test, integration")
   expectContains(

@@ -1,13 +1,18 @@
 import uk.m4xy.kiln.*
+import uk.m4xy.kiln.fckt.FcktConfiguration
+import uk.m4xy.kiln.fckt.StandardFckt
 
 // fk-tests, as a kiln plugin: the task test, part of check, which runs a project's functions marked
 // @Test. settings.fk says build scripts use it, settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")]),
-// and build.fk applies it, as it is, or configured by a module that follows TestConfiguration:
+// and build.fk applies it, with fckt's, as it is, or configured by a module that follows
+// TestConfiguration, and, for a project laid out as fckt's isn't by default, the module fckt's is
+// configured with, Code:
 //
+//   import uk.m4xy.kiln.fckt.Fckt
 //   import uk.m4xy.fktests.kiln.*
 //
-//   plugins = [FkTests()]
-module FkTests(Configuration: TestConfiguration = StandardTests) : Plugin {
+//   plugins = [Fckt(), FkTests()]
+module FkTests(Configuration: TestConfiguration = StandardTests, Code: FcktConfiguration = StandardFckt) : Plugin {
   name(): String = "fk-tests"
 
   tasks(project: Project): List<Task> = [
@@ -16,7 +21,7 @@ module FkTests(Configuration: TestConfiguration = StandardTests) : Plugin {
       "Runs the functions marked @Test in ${Configuration.roots().map(root -> root.folder.value).joinToString(", ")}",
       dependsOn = Configuration.dependsOn(),
       partOf = ["check"],
-      action = build -> Testing.runAll(build, Configuration.roots(), Configuration.runner(), Configuration.inputs()),
+      action = build -> Testing.runAll(build, Code.layout(), Configuration.roots(), Configuration.runner(), Configuration.inputs()),
     ),
   ]
 }

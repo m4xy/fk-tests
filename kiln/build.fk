@@ -1,6 +1,7 @@
 // fk-tests-kiln: fk-tests as a kiln plugin, FkTests, whose task runs a project's functions marked
 // @Test. It makes tasks with kiln's library, which kiln has. Its own tests use it,
 // fk-tests and the runner, from here.
+import uk.m4xy.kiln.fckt.Fckt
 import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "fk-tests-kiln", group = "uk.m4xy", version = "0.1.0", dependencies = [kiln()])
@@ -11,4 +12,4 @@ module OwnTests : TestConfiguration {
   runner(): TestRunner = TestRunner(uses = [projectAt("../runner")])
 }
 
-plugins = [FkTests(OwnTests)]
+plugins = [Fckt(), FkTests(OwnTests)]

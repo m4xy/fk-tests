@@ -1,6 +1,7 @@
 // fk-tests: what tests for fckt are written with, @Test. kiln publishLocal publishes it, and a
 // project uses it with fk-tests-kiln, from kiln, whose FkTests has it run by fk-tests-runner, from
 // runner. Its own tests use those from here.
+import uk.m4xy.kiln.fckt.Fckt
 import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "fk-tests", group = "uk.m4xy", version = "0.1.0")
@@ -11,4 +12,4 @@ module OwnTests : TestConfiguration {
   runner(): TestRunner = TestRunner(uses = [projectAt("runner")])
 }
 
-plugins = [FkTests(OwnTests)]
+plugins = [Fckt(), FkTests(OwnTests)]

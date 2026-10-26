@@ -22,11 +22,12 @@ settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")])
 
 ```kotlin
 // build.fk
+import uk.m4xy.kiln.fckt.Fckt
 import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "shop")
 
-plugins = [FkTests()]
+plugins = [Fckt(), FkTests()]
 ```
 
 ```
@@ -120,8 +121,12 @@ module Mine : TestConfiguration {
   roots(): List<TestRoot> = [TestRoot(path("test")), TestRoot(path("integration"))]
 }
 
-plugins = [FkTests(Mine)]
+plugins = [Fckt(), FkTests(Mine)]
 ```
+
+The tests are fckt, compiled as `Fckt` compiles the project, so a project laid out as fckt's isn't
+by default gives `FkTests` the module it configures `Fckt` with, too: `plugins = [Fckt(Layout),
+FkTests(Mine, Layout)]`.
 
 Tests that run something besides their own code say so, so they never pass against an old copy of
 it: kiln's run the kiln its `compile` makes, so its build has them depend on that task, and count

@@ -34,7 +34,8 @@ import fckt.io.Processes.*
 @FileSystem @Process testedProject(folder: Path, name: String): Unit = {
   repo = path(here()).resolve("..").value
   write(folder, "settings.fk", "settings = Settings(uses = [projectAt(\"$repo/kiln\")])\n")
-  write(folder, "build.fk", """import uk.m4xy.fktests.kiln.*
+  write(folder, "build.fk", """import uk.m4xy.kiln.fckt.Fckt
+import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "$name")
 
@@ -43,7 +44,7 @@ module Tests : TestConfiguration {
   runner(): TestRunner = TestRunner(uses = [projectAt("$repo/runner")])
 }
 
-plugins = [FkTests(Tests)]
+plugins = [Fckt(), FkTests(Tests)]
 """)
 }
 
