@@ -10,6 +10,7 @@ import uk.m4xy.kiln.fckt.*
 import uk.m4xy.kiln.fckt.Compiling.*
 import uk.m4xy.kiln.fckt.Programs.rememberScope
 import uk.m4xy.kiln.fckt.Resolving.resolve
+import uk.m4xy.kiln.fckt.Sources.allSources
 import uk.m4xy.fktests.kiln.events.*
 import fckt.effects.Fail
 import fckt.text.Digests.*
@@ -51,7 +52,7 @@ module Testing {
         buildProgram(project.output, program, inputs) { ml ->
           runOrFail(compiler(), ["--test", folder.value, "--marker", runner.marker, "--fixtures", runner.fixtures, "--runner", runner.runner, "-o", ml.value, "--separate", "--no-std"] +
             (if (runner.uses.isEmpty()) ["--runner-tests"] else []) +
-            sourceArgs(layout.sources, resolved.roots) + interfaces(linking.libraries))
+            sourceArgs(layout.allSources(), resolved.roots) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)
         }
         exit = run(program.value, ["--report", "lines"] + build.args)

@@ -1,6 +1,7 @@
 import uk.m4xy.kiln.*
 import uk.m4xy.kiln.fckt.FcktConfiguration
 import uk.m4xy.kiln.fckt.StandardFckt
+import uk.m4xy.kiln.fckt.FcktTasks
 
 // fk-tests, as a kiln plugin: the task test, part of check, which runs a project's functions marked
 // @Test. settings.fk says build scripts use it, settings = Settings(uses = [library("uk.m4xy:fk-tests-kiln:0.1.0")]),
@@ -19,7 +20,8 @@ module FkTests(Configuration: TestConfiguration = StandardTests, Code: FcktConfi
     Task(
       TestTasks.test,
       "Runs the functions marked @Test in ${Configuration.roots().map(root -> root.folder.value).joinToString(", ")}",
-      dependsOn = Configuration.dependsOn(),
+      // What processors write from the project's code is the tests' too, so they run first.
+      dependsOn = (if (Code.layout().processors.isEmpty()) [] else [FcktTasks.process]) + Configuration.dependsOn(),
       partOf = [Check],
       action = build -> Testing.runAll(build, Code.layout(), Configuration.roots(), Configuration.runner(), Configuration.inputs()),
     ),
