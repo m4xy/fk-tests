@@ -39,9 +39,11 @@ import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "$name")
 
+repo = "$repo"
+
 module Tests : TestConfiguration {
-  roots(): List<TestRoot> = [TestRoot(path("test"), uses = [projectAt("$repo")])]
-  runner(): TestRunner = TestRunner(uses = [projectAt("$repo/runner")])
+  roots(): List<TestRoot> = [TestRoot(path("test"), uses = [projectAt(repo)])]
+  runner(): TestRunner = TestRunner(uses = [projectAt(repo + "/runner")])
 }
 
 plugins = [Fckt(), FkTests(Tests)]
@@ -55,4 +57,7 @@ plugins = [Fckt(), FkTests(Tests)]
 }
 
 // Fails, saying what was expected and what there was, unless text contains part.
-expectContains(text: String, part: String): Unit = if (!text.contains(part)) error("expected to find:\n$part\nin:\n$text")
+expectContains(
+  text: String,
+  part: String,
+): Unit = if (!text.contains(part)) error("expected to find:\n$part\nin:\n$text")

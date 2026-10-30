@@ -90,9 +90,14 @@ import uk.m4xy.fktests.kiln.*
 
 project = Project(name = "roots")
 
+repo = "$repo"
+
 module Both : TestConfiguration {
-  roots(): List<TestRoot> = [TestRoot(path("test"), uses = [projectAt("$repo")]), TestRoot(path("integration"), uses = [projectAt("$repo")])]
-  runner(): TestRunner = TestRunner(uses = [projectAt("$repo/runner")])
+  roots(): List<TestRoot> = [
+    TestRoot(path("test"), uses = [projectAt(repo)]),
+    TestRoot(path("integration"), uses = [projectAt(repo)]),
+  ]
+  runner(): TestRunner = TestRunner(uses = [projectAt(repo + "/runner")])
 }
 
 plugins = [Fckt(), FkTests(Both)]

@@ -7,7 +7,11 @@ module LineReading {
       ["suite-started", file] -> SuiteStarted(file)
       ["test-finished", _, name, outcome, _] -> TestFinished(name, outcome, "")
       ["test-finished", _, name, outcome, _, message] -> TestFinished(name, outcome, message)
-      ["completed", passed, failed, skipped, _] -> Completed(count(passed), count(failed), count(skipped))
+      ["completed", passed, failed, skipped, _] -> Completed(
+        count(passed),
+        count(failed),
+        count(skipped),
+      )
       else -> Ignored
     }
 

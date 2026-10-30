@@ -22,7 +22,11 @@ module Words : Format {
 module Shouting : Format {
   type T = String
   of(value: String): String = value.uppercase()
-  read(text: String): Result<String, String> = if (text.isEmpty()) Error("nothing was said") else Ok(text.lowercase())
+  read(
+    text: String,
+  ): Result<String, String> = if (text.isEmpty()) Error("nothing was said") else Ok(
+    text.lowercase(),
+  )
 }
 
 @Test whatsReadBackAsItWasIsFine() = {

@@ -15,7 +15,9 @@ module Formats {
     when (format.read(written)) {
       Ok(read) ->
         if (read == value) None
-        else if (format.of(read) == written) Some("'$written' was read back as something else, which is written the same")
+        else if (format.of(read) == written) Some(
+          "'$written' was read back as something else, which is written the same",
+        )
         else Some("'$written' was read back as '${format.of(read)}'")
       Error(problem) -> Some("'$written' wasn't read back: $problem")
     }

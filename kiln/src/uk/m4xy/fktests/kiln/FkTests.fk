@@ -13,7 +13,10 @@ import uk.m4xy.kiln.fckt.FcktTasks
 //   import uk.m4xy.fktests.kiln.*
 //
 //   plugins = [Fckt(), FkTests()]
-module FkTests(Configuration: TestConfiguration = StandardTests, Code: FcktConfiguration = StandardFckt) : Plugin {
+module FkTests(
+  Configuration: TestConfiguration = StandardTests,
+  Code: FcktConfiguration = StandardFckt
+) : Plugin {
   name(): String = "fk-tests"
 
   tasks(project: Project): List<Task> = [

@@ -34,7 +34,14 @@ module Testing {
 
   // Runs the tests, unless they passed, would be compiled from what they were, and files are what
   // they were, and nothing chooses which.
-  @Building private test(build: Invocation, layout: FcktLayout, uses: List<Dependency>, folder: Path, runner: TestRunner, files: List<Path>): Unit = {
+  @Building private test(
+    build: Invocation,
+    layout: FcktLayout,
+    uses: List<Dependency>,
+    folder: Path,
+    runner: TestRunner,
+    files: List<Path>,
+  ): Unit = {
     project = build.project
     marked = if (folder.isDirectory()) folder.listFiles().filter { it.extension == "fk" && hasTests(it) } else []
     if (marked.isEmpty()) println("  no tests in ${folder.value}")
@@ -95,15 +102,22 @@ module Testing {
   @Console private show(line: RunnerLine): Unit = when (line) {
     SuiteStarted(file) -> println("  $file")
     TestFinished(name, "passed", _) -> println("    passed $name")
-    TestFinished(name, "failed", message) -> println("    FAILED $name: ${message.replace("\n", "\n      ")}")
+    TestFinished(name, "failed", message) -> println(
+      "    FAILED $name: ${message.replace("\n", "\n      ")}",
+    )
     TestFinished(_, _, _) -> Unit
     Completed(passed, failed, _) -> println("  ${summaryOf(passed, failed)}")
     Output(text) -> println("  $text")
     Ignored -> Unit
   }
 
-  private summaryOf(passed: Int, failed: Int): String = if (passed + failed == 0) "no tests ran" else "$passed passed, $failed failed"
+  private summaryOf(
+    passed: Int,
+    failed: Int,
+  ): String = if (passed + failed == 0) "no tests ran" else "$passed passed, $failed failed"
 
   // Whether the file marks a function @Test, on a line of its own.
-  @FileSystem private hasTests(file: Path): Boolean = file.readLines().any { it.startsWith("@Test ") }
+  @FileSystem private hasTests(
+    file: Path,
+  ): Boolean = file.readLines().any { it.startsWith("@Test ") }
 }

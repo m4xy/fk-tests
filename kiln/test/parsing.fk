@@ -22,4 +22,7 @@ import uk.m4xy.fktests.kiln.events.RunnerLine
 }
 
 // What a test prints itself is output, between the events.
-@Test outputIsntAnEvent() = assertEquals(RunnerLine.Output("debugging"), LineReading.parse("debugging"))
+@Test outputIsntAnEvent() = assertEquals(
+  RunnerLine.Output("debugging"),
+  LineReading.parse("debugging"),
+)

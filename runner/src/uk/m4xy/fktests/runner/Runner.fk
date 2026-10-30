@@ -14,7 +14,13 @@ import fckt.io.Console
 module Runner {
   // A test: fckt's main makes one for each function marked @Test, in file, a path from the tests'
   // folder, in the modules sections names there.
-  test<@E>(file: String, sections: List<String>, name: String, line: Int, body: @Fail @E () -> Unit): TestCase<@E> =
+  test<@E>(
+    file: String,
+    sections: List<String>,
+    name: String,
+    line: Int,
+    body: @Fail @E () -> Unit,
+  ): TestCase<@E> =
     TestCase(TestId(path(file), sections, name), Location(path(file), line), body)
 
   // A file's tests.
@@ -26,7 +32,10 @@ module Runner {
   // Runs plan as args say, reported as they say, then exits with 1 if any test failed, or 2 if args
   // don't say what they mean. args choose which run, as selectorOf reads them, and --report lines
   // reports as LineReport does, for another program; ConsoleReport, for people, if not.
-  @Console @Clock @Process main<@E>(args: List<String>, plan: Plan<@E>): Unit = when (selectionOf(args)) {
+  @Console @Clock @Process main<@E>(
+    args: List<String>,
+    plan: Plan<@E>,
+  ): Unit = when (selectionOf(args)) {
     Error(problem) -> {
       println("fk-tests: $problem")
       exit(2)
@@ -61,11 +70,15 @@ module Runner {
       if (!isFile(file) || !parts.all { isName(it) }) Error(unreadable(arg))
       else when (rest) {
         [] -> Ok(Section(path(file), sections))
-        [name] -> if (isSection(name)) Error(unreadable(arg)) else Ok(Exactly(TestId(path(file), sections, name)))
+        [name] -> if (isSection(name)) Error(unreadable(arg)) else Ok(
+          Exactly(TestId(path(file), sections, name)),
+        )
         else -> Error(unreadable(arg))
       }
     }
-    [one] -> if (isFile(one)) Ok(File(path(one))) else if (isName(one)) Ok(Test(one)) else Error(unreadable(arg))
+    [one] -> if (isFile(one)) Ok(File(path(one))) else if (isName(one)) Ok(Test(one)) else Error(
+      unreadable(arg),
+    )
     else -> Error(unreadable(arg))
   }
 
@@ -78,9 +91,13 @@ module Runner {
 
   private isFile(text: String): Boolean = text.endsWith(".fk") && text.length > 3
 
-  private isName(text: String): Boolean = text.isNotEmpty() && text.toList().all { it.isLetterOrDigit() || it == '_' }
+  private isName(
+    text: String,
+  ): Boolean = text.isNotEmpty() && text.toList().all { it.isLetterOrDigit() || it == '_' }
 
-  private isSection(text: String): Boolean = isName(text) && text.toList().firstOrNone().map { it.isUpperCase() }.getOrElse(false)
+  private isSection(
+    text: String,
+  ): Boolean = isName(text) && text.toList().firstOrNone().map { it.isUpperCase() }.getOrElse(false)
 
   private unreadable(arg: String): String =
     "can't tell which tests '$arg' means: a test's name, sums; a file, prices.fk; a file's test, prices.fk::sums; or a section of it, prices.fk::Totals"

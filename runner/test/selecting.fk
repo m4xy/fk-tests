@@ -9,7 +9,9 @@ sums = TestId(path("prices.fk"), [], "sums")
 total = TestId(path("prices.fk"), ["Totals", "Empty"], "total")
 
 // Whether args choose sums, if they say what they mean.
-chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
+chosen(
+  args: List<String>,
+): Boolean = Selections.selects(Runner.selectionOf(args).getOrElse(Selection.Only([])), sums)
 
 @Test allRunWithoutArguments() = assert(chosen([]))
 
@@ -38,7 +40,10 @@ chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args
     Ok(Selector.Section(path("prices.fk"), ["Totals"])),
     Runner.selectorOf("prices.fk::Totals"),
   )
-  only = (arg: String) -> Selections.selects(Runner.selectionOf([arg]).getOrElse(Selection.Only([])), total)
+  only = (arg: String) -> Selections.selects(
+    Runner.selectionOf([arg]).getOrElse(Selection.Only([])),
+    total,
+  )
   assert(only("prices.fk::Totals"))
   assert(only("prices.fk::Totals.Empty"))
   assert(!only("prices.fk::Discounts"))

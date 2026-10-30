@@ -18,7 +18,10 @@ module Execution {
   }
 
   // A suite's tests: those chosen run, between its start and finish; the others are skipped.
-  @TestEvents @Clock private runSuite<@E>(suite: Suite<@E>, selection: Selection): List<TestResult> = {
+  @TestEvents @Clock private runSuite<@E>(
+    suite: Suite<@E>,
+    selection: Selection,
+  ): List<TestResult> = {
     (chosen, others) = suite.cases.partition { Selections.selects(selection, it.id) }
     skipped = others.map { TestResult(it.id, Skipped, Duration(0)) }
     if (chosen.isEmpty()) skipped
