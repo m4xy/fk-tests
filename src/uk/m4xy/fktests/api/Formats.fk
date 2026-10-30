@@ -3,14 +3,14 @@ import fckt.text.Format
 // What a test says about formats, for any of them.
 module Formats {
   // Fails unless format reads back value as it wrote it.
-  assertReadsBack<A>(format: Format<A>, value: A): Unit = when (readBackProblem(format, value)) {
+  assertReadsBack(format: Format, value: format.T): Unit = when (readBackProblem(format, value)) {
     Some(problem) -> error(problem)
     None -> Unit
   }
 
   // What's wrong with how format reads back value, if anything: said as the format writes it, as
   // it's all that can show any format's values.
-  readBackProblem<A>(format: Format<A>, value: A): Option<String> = {
+  readBackProblem(format: Format, value: format.T): Option<String> = {
     written = format.of(value)
     when (format.read(written)) {
       Ok(read) ->
