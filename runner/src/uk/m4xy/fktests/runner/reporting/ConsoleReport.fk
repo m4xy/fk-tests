@@ -16,5 +16,7 @@ module ConsoleReport : TestEvents {
   }
   suiteFinished(suite: Path): Unit = Unit
   @Console completed(summary: Summary): Unit =
-    println(if (summary.passed + summary.failed == 0) "no tests ran" else "${summary.passed} passed, ${summary.failed} failed")
+    println(
+      if (summary.passed + summary.failed == 0) "no tests ran" else "${summary.passed} passed, ${summary.failed} failed",
+    )
 }

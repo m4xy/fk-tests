@@ -4,11 +4,19 @@ import uk.m4xy.fktests.kiln.events.RunnerLine
 
 // The runner's events, as LineReport writes them, with their fields unescaped.
 @Test eventsAreRead() = {
-  assertEquals(RunnerLine.SuiteStarted("prices.fk"), LineReading.parse("##fk\tsuite-started\tprices.fk"))
-  assertEquals(RunnerLine.TestFinished("sums", "passed", ""), LineReading.parse("##fk\ttest-finished\tprices.fk\tsums\tpassed\t3"))
+  assertEquals(
+    RunnerLine.SuiteStarted("prices.fk"),
+    LineReading.parse("##fk\tsuite-started\tprices.fk"),
+  )
+  assertEquals(
+    RunnerLine.TestFinished("sums", "passed", ""),
+    LineReading.parse("##fk\ttest-finished\tprices.fk\tsums\tpassed\t3"),
+  )
   assertEquals(
     RunnerLine.TestFinished("empty", "failed", "first\nsecond\twith a \\ in it"),
-    LineReading.parse("##fk\ttest-finished\tprices.fk\tempty\tfailed\t1\tfirst\\nsecond\\twith a \\\\ in it"),
+    LineReading.parse(
+      "##fk\ttest-finished\tprices.fk\tempty\tfailed\t1\tfirst\\nsecond\\twith a \\\\ in it",
+    ),
   )
   assertEquals(RunnerLine.Completed(1, 2, 3), LineReading.parse("##fk\tcompleted\t1\t2\t3\t40"))
 }

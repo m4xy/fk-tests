@@ -52,6 +52,12 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
 
 // What isn't chosen is skipped, without being started.
 @Test whatIsntChosenIsSkipped() = assertEquals(
-  ["started prices.fk", "started sums", "finished sums in 5ms: passed", "finished prices.fk", "1 passed, 0 failed, 2 skipped, in 15ms"],
+  [
+    "started prices.fk",
+    "started sums",
+    "finished sums in 5ms: passed",
+    "finished prices.fk",
+    "1 passed, 0 failed, 2 skipped, in 15ms",
+  ],
   heard(Selection.Only([Selector.Test("sums")])),
 )

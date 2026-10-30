@@ -23,7 +23,13 @@ module FkTests(Configuration: TestConfiguration = StandardTests, Code: FcktConfi
       // What processors write from the project's code is the tests' too, so they run first.
       dependsOn = (if (Code.layout().processors.isEmpty()) [] else [FcktTasks.process]) + Configuration.dependsOn(),
       partOf = [Check],
-      action = build -> Testing.runAll(build, Code.layout(), Configuration.roots(), Configuration.runner(), Configuration.inputs()),
+      action = build -> Testing.runAll(
+        build,
+        Code.layout(),
+        Configuration.roots(),
+        Configuration.runner(),
+        Configuration.inputs(),
+      ),
     ),
   ]
 }

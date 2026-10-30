@@ -20,7 +20,13 @@ import fckt.text.Digests.*
 module Testing {
   // Runs the tests in each of roots with runner, those of a root together, in a project laid out as
   // layout says; files, what they run or read besides their own code.
-  @Building runAll(build: Invocation, layout: FcktLayout, roots: List<TestRoot>, runner: TestRunner, files: List<Path>): Unit =
+  @Building runAll(
+    build: Invocation,
+    layout: FcktLayout,
+    roots: List<TestRoot>,
+    runner: TestRunner,
+    files: List<Path>,
+  ): Unit =
     roots.forEach { root ->
       if (roots.size > 1) println("  ${root.folder.value}/")
       test(build, layout, root.uses, root.folder, runner, files)
@@ -34,11 +40,18 @@ module Testing {
     if (marked.isEmpty()) println("  no tests in ${folder.value}")
     else {
       tests = resolve(project.copy(dependencies = project.dependencies + uses), layout)
-      resolved = resolve(project.copy(dependencies = project.dependencies + uses + runner.uses), layout)
+      resolved = resolve(
+        project.copy(dependencies = project.dependencies + uses + runner.uses),
+        layout,
+      )
       linking = linking(resolved)
       // The tests see what's internal to the project, as its own code does, but not to the projects it uses.
       // For editors: the tests' files see what they're written with, but not the runner.
-      rememberScope(folder.name, folder, linking.libraries.filter { tests.libraries.contains(it.coordinates) })
+      rememberScope(
+        folder.name,
+        folder,
+        linking.libraries.filter { tests.libraries.contains(it.coordinates) },
+      )
       inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker +
         files.map { f -> "${f.value} ${if (f.exists()) f.readBytes().md5() else "missing"}" }.joinToString("\n")
       output = project.output.resolve("tests").resolve(folder.name)

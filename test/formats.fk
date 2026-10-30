@@ -32,7 +32,13 @@ module Shouting : Format {
 }
 
 @Test whatIsntSaysHowAsTheFormatWritesIt() = {
-  assertEquals(Some("'many' was read back as something else, which is written the same"), readBackProblem(Words, 7))
-  assertEquals(Some("'HELLO' was read back as something else, which is written the same"), readBackProblem(Shouting, "Hello"))
+  assertEquals(
+    Some("'many' was read back as something else, which is written the same"),
+    readBackProblem(Words, 7),
+  )
+  assertEquals(
+    Some("'HELLO' was read back as something else, which is written the same"),
+    readBackProblem(Shouting, "Hello"),
+  )
   assertEquals(Some("'' wasn't read back: nothing was said"), readBackProblem(Shouting, ""))
 }

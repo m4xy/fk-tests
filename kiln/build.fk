@@ -4,7 +4,12 @@
 import uk.m4xy.kiln.fckt.Fckt
 import uk.m4xy.fktests.kiln.*
 
-project = Project(name = "fk-tests-kiln", group = "uk.m4xy", version = "0.1.0", dependencies = [kiln()])
+project = Project(
+  name = "fk-tests-kiln",
+  group = "uk.m4xy",
+  version = "0.1.0",
+  dependencies = [kiln()],
+)
 
 // Its tests are written with fk-tests, and run by the runner, as they are here.
 module OwnTests : TestConfiguration {

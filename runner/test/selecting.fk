@@ -34,7 +34,10 @@ chosen(args: List<String>): Boolean = Selections.selects(Runner.selectionOf(args
 }
 
 @Test aSectionChoosesItsTests() = {
-  assertEquals(Ok(Selector.Section(path("prices.fk"), ["Totals"])), Runner.selectorOf("prices.fk::Totals"))
+  assertEquals(
+    Ok(Selector.Section(path("prices.fk"), ["Totals"])),
+    Runner.selectorOf("prices.fk::Totals"),
+  )
   only = (arg: String) -> Selections.selects(Runner.selectionOf([arg]).getOrElse(Selection.Only([])), total)
   assert(only("prices.fk::Totals"))
   assert(only("prices.fk::Totals.Empty"))

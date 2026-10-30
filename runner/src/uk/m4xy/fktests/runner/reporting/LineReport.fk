@@ -24,7 +24,15 @@ module LineReport : TestEvents {
   })
   @Console suiteFinished(suite: Path): Unit = event(["suite-finished", suite.value])
   @Console completed(summary: Summary): Unit =
-    event(["completed", summary.passed.toString(), summary.failed.toString(), summary.skipped.toString(), summary.took.millis.toString()])
+    event(
+      [
+        "completed",
+        summary.passed.toString(),
+        summary.failed.toString(),
+        summary.skipped.toString(),
+        summary.took.millis.toString(),
+      ],
+    )
 
   @Console private event(fields: List<String>): Unit = println((["##fk"] + fields.map { escape(it) }).joinToString("\t"))
 

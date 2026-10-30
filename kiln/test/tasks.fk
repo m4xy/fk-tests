@@ -11,23 +11,40 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
 @Test @FileSystem @Process testsArePartOfCheck() = {
   till = project("till")
   write(till, "src/pricing/Prices.fk", prices)
-  write(till, "test/prices.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2, 3]) == 6)\n@Test empty() = assert(Prices.total([]) == 0)\n")
+  write(
+    till,
+    "test/prices.fk",
+    "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2, 3]) == 6)\n@Test empty() = assert(Prices.total([]) == 0)\n",
+  )
   testedProject(till, "till")
   built = kiln(till, ["build"]).value
-  expectContains(built, "> Task :test\n  prices.fk\n    passed sums\n    passed empty\n  2 passed, 0 failed\n> Task :check\n> Task :build\nBUILD SUCCESSFUL\n")
+  expectContains(
+    built,
+    "> Task :test\n  prices.fk\n    passed sums\n    passed empty\n  2 passed, 0 failed\n> Task :check\n> Task :build\nBUILD SUCCESSFUL\n",
+  )
   expectContains(kiln(till, ["check"]).value, "> Task :test\n  2 passed, 0 failed (up to date)\n")
-  expectContains(kiln(till, ["test", "--", "empty"]).value, "> Task :test\n  prices.fk\n    passed empty\n  1 passed, 0 failed\n")
+  expectContains(
+    kiln(till, ["test", "--", "empty"]).value,
+    "> Task :test\n  prices.fk\n    passed empty\n  1 passed, 0 failed\n",
+  )
 }
 
 // A failing test fails the build.
 @Test @FileSystem @Process aFailingTestFailsTheBuild() = {
   till = project("failing")
   write(till, "src/pricing/Prices.fk", prices)
-  write(till, "test/wrong.fk", "import uk.m4xy.fktests.api.Test\n\n@Test adds() = assertEquals(3, 1 + 1)\n")
+  write(
+    till,
+    "test/wrong.fk",
+    "import uk.m4xy.fktests.api.Test\n\n@Test adds() = assertEquals(3, 1 + 1)\n",
+  )
   testedProject(till, "failing")
   wrong = kiln(till, ["build"])
   assertEquals(1, wrong.code)
-  expectContains(wrong.value, "    FAILED adds: wrong.fk line 3: expected:<3> but was:<2>\n  0 passed, 1 failed\nBUILD FAILED: tests failed")
+  expectContains(
+    wrong.value,
+    "    FAILED adds: wrong.fk line 3: expected:<3> but was:<2>\n  0 passed, 1 failed\nBUILD FAILED: tests failed",
+  )
 }
 
 // The tests see what they're written with, but not the runner; the program sees neither.
@@ -35,8 +52,15 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
   till = project("seeing")
   write(till, "src/pricing/Prices.fk", prices)
   testedProject(till, "seeing")
-  write(till, "test/sneaky.fk", "import uk.m4xy.fktests.api.Test\nimport uk.m4xy.fktests.runner.Runner\n\n@Test sneaks() = Unit\n")
-  expectContains(kiln(till, ["test"]).value, "uk.m4xy.fktests.runner runs the tests, so they can't use it")
+  write(
+    till,
+    "test/sneaky.fk",
+    "import uk.m4xy.fktests.api.Test\nimport uk.m4xy.fktests.runner.Runner\n\n@Test sneaks() = Unit\n",
+  )
+  expectContains(
+    kiln(till, ["test"]).value,
+    "uk.m4xy.fktests.runner runs the tests, so they can't use it",
+  )
   write(till, "test/sneaky.fk", "import uk.m4xy.fktests.api.Test\n\n@Test sneaks() = Unit\n")
   kiln(till, ["test"])
   expectContains(till.resolve(".kiln/scopes/test").readText(), "folder test\n")
@@ -49,8 +73,16 @@ prices = "module Prices {\n  total(items: List<Int>): Int = items.sum()\n}\n"
 @Test @FileSystem @Process eachRootsTestsRunTogether() = {
   till = project("roots")
   write(till, "src/pricing/Prices.fk", prices)
-  write(till, "test/prices.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2]) == 3)\n")
-  write(till, "integration/till.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test rings() = assert(Prices.total([5]) == 5)\n")
+  write(
+    till,
+    "test/prices.fk",
+    "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1, 2]) == 3)\n",
+  )
+  write(
+    till,
+    "integration/till.fk",
+    "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test rings() = assert(Prices.total([5]) == 5)\n",
+  )
   testedProject(till, "roots")
   repo = path(here()).resolve("..").value
   write(till, "build.fk", """import uk.m4xy.kiln.fckt.Fckt
@@ -65,7 +97,10 @@ module Both : TestConfiguration {
 
 plugins = [Fckt(), FkTests(Both)]
 """)
-  expectContains(kiln(till, ["tasks"]).value, "  test - Runs the functions marked @Test in test, integration")
+  expectContains(
+    kiln(till, ["tasks"]).value,
+    "  test - Runs the functions marked @Test in test, integration",
+  )
   expectContains(
     kiln(till, ["test"]).value,
     "> Task :test\n  test/\n  prices.fk\n    passed sums\n  1 passed, 0 failed\n  integration/\n  till.fk\n    passed rings\n  1 passed, 0 failed\n",
@@ -76,8 +111,18 @@ plugins = [Fckt(), FkTests(Both)]
 @Test @FileSystem @Process aSectionChoosesItsTests() = {
   till = project("sections")
   write(till, "src/pricing/Prices.fk", prices)
-  write(till, "test/prices.fk", "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1]) == 1)\n\nmodule Empty {\n  @Test totalsNothing() = assert(Prices.total([]) == 0)\n}\n")
+  write(
+    till,
+    "test/prices.fk",
+    "import uk.m4xy.fktests.api.Test\nimport pricing.Prices\n\n@Test sums() = assert(Prices.total([1]) == 1)\n\nmodule Empty {\n  @Test totalsNothing() = assert(Prices.total([]) == 0)\n}\n",
+  )
   testedProject(till, "sections")
-  expectContains(kiln(till, ["test"]).value, "  prices.fk\n    passed sums\n    passed Empty.totalsNothing\n  2 passed, 0 failed\n")
-  expectContains(kiln(till, ["test", "--", "prices.fk::Empty"]).value, "  prices.fk\n    passed Empty.totalsNothing\n  1 passed, 0 failed\n")
+  expectContains(
+    kiln(till, ["test"]).value,
+    "  prices.fk\n    passed sums\n    passed Empty.totalsNothing\n  2 passed, 0 failed\n",
+  )
+  expectContains(
+    kiln(till, ["test", "--", "prices.fk::Empty"]).value,
+    "  prices.fk\n    passed Empty.totalsNothing\n  1 passed, 0 failed\n",
+  )
 }
