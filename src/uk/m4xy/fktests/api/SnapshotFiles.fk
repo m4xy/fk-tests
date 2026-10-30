@@ -1,0 +1,59 @@
+import fckt.effects.Fail
+import fckt.io.Channel
+import fckt.io.FileSystem
+import fckt.io.Process
+import fckt.io.Path
+import fckt.io.Paths.*
+import fckt.io.Files.*
+
+// Snapshots kept as files, name.txt, in the folder FK_TESTS_SNAPSHOTS says, as the runner's
+// --snapshots does, or test/snapshots. One that's missing is kept, unless CI is set, where it
+// fails, as it should have been kept with the test. With FK_TESTS_UPDATE_SNAPSHOTS, as the runner's
+// --update-snapshots sets, one that's changed is kept as it is now. A variable set to "" isn't set.
+module SnapshotFiles : Snapshots {
+  @Fail @Channel @FileSystem @Process checkSnapshot(
+    name: String,
+    actual: String,
+  ): Option<String> = {
+    file = path(setting("FK_TESTS_SNAPSHOTS").getOrElse("test/snapshots")).resolve("$name.txt")
+    updating = setting("FK_TESTS_UPDATE_SNAPSHOTS").isSome()
+    if (!file.exists()) {
+      if (setting("CI").isSome() && !updating) Some(
+        "no snapshot $name: keep one with kiln test -- --update-snapshots, then commit ${file.value}",
+      )
+      else {
+        keep(file, actual)
+        None
+      }
+    } else {
+      kept = file.readText()
+      if (kept == actual) None
+      else if (updating) {
+        keep(file, actual)
+        None
+      } else Some(
+        Facts.failure(
+          "snapshot $name isn't what was kept in ${file.value}",
+          [
+            ("assertion", "assertSnapshot"),
+            ("where", "snapshot $name"),
+            ("file", file.value),
+            ("expected", kept),
+            ("actual", actual),
+          ],
+        ),
+      )
+    }
+  }
+
+  // What the variable name is set to, unless it's empty, which is as if it weren't set.
+  @Process private setting(name: String): Option<String> = when (env(name)) {
+    Some("") -> None
+    value -> value
+  }
+
+  @FileSystem private keep(file: Path, text: String): Unit = {
+    file.parent.forEach { it.makeDirs() }
+    file.writeText(text)
+  }
+}

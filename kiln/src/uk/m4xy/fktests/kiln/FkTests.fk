@@ -32,6 +32,7 @@ module FkTests(
         Configuration.roots(),
         Configuration.runner(),
         Configuration.inputs(),
+        Configuration.timeout(),
       ),
     ),
   ]

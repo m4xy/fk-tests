@@ -1,0 +1,86 @@
+// Why a test failed, from what stopped it: what a failed assertion says, and what fckt says after
+// it, a line fckt-assertion 1 and its facts, said as people read them, what was checked and how it
+// went:
+//
+//   prices.fk line 5: assert(Prices.total(items) == 6) failed
+//     Prices.total(items) is 7
+//
+// What says no facts is said as it is.
+module Explanations {
+  marker: String = "\nfckt-assertion 1"
+
+  // Why a test failed, from what stopped it.
+  of(
+    stopped: String,
+  ): Failure = factsOf(
+    stopped,
+  ).flatMap { explain(it) }.map { Failure(it) }.getOrElse(Failure(stopped))
+
+  // What fckt said after what stopped a test, if it said anything: each fact's key and value, in order.
+  factsOf(stopped: String): Option<List<(String, String)>> = {
+    i = stopped.lastIndexOf(marker)
+    rest = if (i < 0) "" else stopped.drop(i + marker.length)
+    if (i < 0 || !(rest.isEmpty() || rest.startsWith("\n"))) None
+    else Some(rest.drop(1).split("\n").filter { !it.isEmpty() }.map { line ->
+      space = line.indexOf(" ")
+      if (space < 0) (line, "") else (line.take(space), unescape(line.drop(space + 1)))
+    })
+  }
+
+  // What the facts say, a line for what failed and one for each thing that shows how, or None if
+  // they're of an assertion this doesn't know.
+  explain(facts: List<(String, String)>): Option<String> = {
+    where = fact(facts, "where").getOrElse("")
+    checked = fact(facts, "source")
+    compared = (fact(facts, "expected"), fact(facts, "actual"))
+    when (fact(facts, "assertion")) {
+      Some("assert") -> Some(
+        (["$where: ${checked.getOrElse("assertion")} failed"] + operands(facts).map { operand, value -> "  $operand is ${indented(value)}" }).joinToString(
+          "\n",
+        ),
+      )
+      Some("assertEquals") -> when (compared) {
+        (Some(expected), Some(actual)) -> Some(
+          (["$where: ${checked.getOrElse("assertEquals")} failed"] + Differences.between(expected, actual).map { "  $it" }).joinToString(
+            "\n",
+          ),
+        )
+        else -> None
+      }
+      Some("assertSnapshot") -> when (compared) {
+        (Some(expected), Some(actual)) -> Some(
+          (
+            [
+              "$where isn't what was kept in ${fact(facts, "file").getOrElse("its file")}, which is expected:",
+            ] +
+              Differences.between(expected, actual).map { "  $it" } +
+              ["  kiln test -- --update-snapshots keeps it as it is now"]
+          ).joinToString("\n"),
+        )
+        else -> None
+      }
+      else -> None
+    }
+  }
+
+  // The first fact with key.
+  private fact(
+    facts: List<(String, String)>,
+    key: String,
+  ): Option<String> = facts.find { k, _ -> k == key }.map { _, v -> v }
+
+  // Each side of an asserted comparison, as written, with its value.
+  private operands(facts: List<(String, String)>): List<(String, String)> = when (facts) {
+    [] -> []
+    [("operand", operand), ("value", value), *rest] -> [(operand, value)] + operands(rest)
+    [_, *rest] -> operands(rest)
+  }
+
+  // A value on lines after the first, under it.
+  private indented(value: String): String = value.replace("\n", "\n    ")
+
+  // A fact's value as it was before fckt wrote it: \\ and \n back to a backslash and a line break.
+  private unescape(
+    value: String,
+  ): String = value.split("\\\\").map { it.replace("\\n", "\n") }.joinToString("\\")
+}

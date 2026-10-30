@@ -3,30 +3,37 @@ import uk.m4xy.fktests.runner.Runner
 import uk.m4xy.fktests.runner.events.TestEvents
 import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.results.*
+import uk.m4xy.fktests.runner.plan.Plan
+import uk.m4xy.fktests.runner.plan.TestId
+import fckt.io.Paths.*
+import uk.m4xy.fktests.runner.plan.TestIds.*
+import fckt.effects.Fail
 import fckt.time.*
 
 plan = Runner.plan([Runner.suite("prices.fk", [
-  Runner.test("prices.fk", [], "sums", 3) { assert(1 + 1 == 2) },
-  Runner.test("prices.fk", [], "empty", 4) { assertEquals(1, 2) },
-  Runner.test("prices.fk", [], "divides", 5) { assert(1 / 0 == 0) },
+  Runner.test("prices.fk", [], "sums", 3, []) { assert(1 + 1 == 2) },
+  Runner.test("prices.fk", [], "empty", 4, []) { assertEquals(1, 2) },
+  Runner.test("prices.fk", [], "divides", 5, []) { assert(1 / 0 == 0) },
 ])])
 
-// What a run tells TestEvents, as a handler that keeps it has it, on a clock that moves 5ms each
-// time it's asked.
-heard(selection: Selection): List<String> = {
+// What a run of plan tells TestEvents, as a handler that keeps it has it, on a clock that moves 5ms
+// each time it's asked.
+heard(selection: Selection): List<String> = heardOf(plan, selection, [])
+
+heardOf<@E>(plan: Plan<@E>, selection: Selection, without: List<String>): List<String> = {
   var events = []
   var time = 0
   TestEvents(
     suiteStarted = suite -> { events = events + ["started ${suite.value}"] },
-    testStarted = id -> { events = events + ["started ${id.name}"] },
-    testFinished = result -> { events = events + ["finished ${result.id.name} in ${result.took.millis}ms: ${outcomeOf(result.outcome)}"] },
+    testStarted = id -> { events = events + ["started ${id.qualifiedName}"] },
+    testFinished = result -> { events = events + ["finished ${result.id.qualifiedName} in ${result.took.millis}ms: ${outcomeOf(result.outcome)}"] },
     suiteFinished = suite -> { events = events + ["finished ${suite.value}"] },
     completed = summary -> { events = events + ["${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped, in ${summary.took.millis}ms"] },
   ) {
     Clock(now = () -> {
       time = time + 5
       Instant(time)
-    }) { Execution.run(plan, selection) }
+    }) { Execution.run(plan, selection, without) }
   }
   events
 }
@@ -42,7 +49,7 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
   [
     "started prices.fk",
     "started sums", "finished sums in 5ms: passed",
-    "started empty", "finished empty in 5ms: failed, running.fk line 10: expected:<1> but was:<2>",
+    "started empty", "finished empty in 5ms: failed, running.fk line 15: assertEquals(1, 2) failed\n  expected: 1\n  actual:   2",
     "started divides", "finished divides in 5ms: failed, Division_by_zero",
     "finished prices.fk",
     "1 passed, 2 failed, 0 skipped, in 35ms",
@@ -61,3 +68,53 @@ outcomeOf(outcome: Outcome): String = when (outcome) {
   ],
   heard(Selection.Only([Selector.Test("sums")])),
 )
+
+rows = Runner.plan([Runner.suite("rows.fk", [
+  Runner.cases(
+    "rows.fk",
+    [],
+    "even",
+    3,
+    [],
+    () -> [2, 3, 4].map { n -> ("$n", () -> assert(n % 2 == 0)) },
+    check -> check(),
+  ),
+  Runner.cases("rows.fk", [], "none", 4, [], () -> fail("no rows"), check -> check()),
+  Runner.test("rows.fk", [], "online", 5, ["uk.m4xy.http.Network"]) { assert(false) },
+  Runner.cases("rows.fk", [], "nothing", 6, [], () -> [], check -> check()),
+])])
+
+// A test that gives its cases has each run on its own, reported as one of its; one that fails before
+// it gives them fails, and one with none is skipped. A test that does an effect it's run without is
+// skipped, by the effect's name or full name.
+@Test casesRunEachOnTheirOwn() = {
+  expected = [
+    "started rows.fk",
+    "started even[2]", "finished even[2] in 5ms: passed",
+    "started even[3]", "finished even[3] in 5ms: failed, running.fk line 79: assert(n % 2 == 0) failed\n  n % 2 is 1",
+    "started even[4]", "finished even[4] in 5ms: passed",
+    "started none", "finished none in 5ms: failed, no rows",
+    "finished rows.fk",
+    "2 passed, 2 failed, 2 skipped, in 55ms",
+  ]
+  assertEquals(expected, heardOf(rows, Selection.All, ["Network"]))
+  assertEquals(expected, heardOf(rows, Selection.All, ["uk.m4xy.http.Network"]))
+  // A case is chosen with its test.
+  assertEquals(
+    ["started rows.fk", "started even[2]", "finished even[2] in 5ms: passed"],
+    heardOf(rows, Selection.Only([Selector.Exactly(TestId(path("rows.fk"), [], "even"))]), []).take(
+      3,
+    ),
+  )
+}
+
+spin(): Unit = spin()
+
+// A test that takes too long is stopped, and fails, wherever it is; 0 is as long as it takes.
+@Test aTestThatTakesTooLongIsStopped() = {
+  assertEquals(
+    Failed(Failure("took longer than 1s, so it was stopped")),
+    Isolation.run(() -> spin(), 1),
+  )
+  assertEquals(Passed, Isolation.run(() -> assert(true), 0))
+}

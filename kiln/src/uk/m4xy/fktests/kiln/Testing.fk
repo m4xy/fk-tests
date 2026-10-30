@@ -19,17 +19,18 @@ import fckt.text.Digests.*
 // test on its own.
 module Testing {
   // Runs the tests in each of roots with runner, those of a root together, in a project laid out as
-  // layout says; files, what they run or read besides their own code.
+  // layout says; files, what they run or read besides their own code; each given seconds to run.
   @Building runAll(
     build: Invocation,
     layout: FcktLayout,
     roots: List<TestRoot>,
     runner: TestRunner,
     files: List<Path>,
+    seconds: Int = 300,
   ): Unit =
     roots.forEach { root ->
       if (roots.size > 1) println("  ${root.folder.value}/")
-      test(build, layout, root.uses, root.folder, runner, files)
+      test(build, layout, root.uses, root.folder, runner, files, seconds)
     }
 
   // Runs the tests, unless they passed, would be compiled from what they were, and files are what
@@ -41,6 +42,7 @@ module Testing {
     folder: Path,
     runner: TestRunner,
     files: List<Path>,
+    seconds: Int,
   ): Unit = {
     project = build.project
     marked = if (folder.isDirectory()) folder.listFiles().filter { it.extension == "fk" && hasTests(it) } else []
@@ -59,8 +61,15 @@ module Testing {
         folder,
         linking.libraries.filter { tests.libraries.contains(it.coordinates) },
       )
-      inputs = inputs(linking, resolved.roots + [folder], []) + runner.runner + runner.marker +
-        files.map { f -> "${f.value} ${if (f.exists()) f.readBytes().md5() else "missing"}" }.joinToString("\n")
+      // What the tests kept, which they check against, is theirs too.
+      snapshots = folder.resolve("snapshots")
+      kept = if (snapshots.isDirectory()) keptIn(snapshots) else []
+      inputs = inputs(
+        linking,
+        resolved.roots + [folder],
+        [],
+      ) + runner.runner + runner.marker + "$seconds" +
+        (files + kept).map { f -> "${f.value} ${if (f.exists()) f.readBytes().md5() else "missing"}" }.joinToString("\n")
       output = project.output.resolve("tests").resolve(folder.name)
       program = output.resolve("tests")
       passed = output.resolve("passed")
@@ -75,7 +84,17 @@ module Testing {
             sourceArgs(layout.allSources(), resolved.roots) + interfaces(linking.libraries))
           linkProgram(linking, ml, program)
         }
-        exit = run(program.value, ["--report", "lines"] + build.args)
+        exit = run(
+          program.value,
+          [
+            "--report",
+            "lines",
+            "--snapshots",
+            snapshots.value,
+            "--timeout",
+            "$seconds",
+          ] + build.args,
+        )
         lines = exit.value.trim().split("\n").map { LineReading.parse(it) }
         lines.forEach { show(it) }
         completed = lines.find { line ->
@@ -85,10 +104,10 @@ module Testing {
           }
         }
         when (completed) {
-          Some(Completed(passedCount, failedCount, _)) -> {
+          Some(Completed(passedCount, failedCount, skippedCount)) -> {
             if (failedCount > 0 || exit.code != 0) fail("tests failed")
             if (build.args.isEmpty()) {
-              summary.writeText(summaryOf(passedCount, failedCount))
+              summary.writeText(summaryOf(passedCount, failedCount, skippedCount))
               passed.writeText(inputs)
             }
           }
@@ -106,15 +125,19 @@ module Testing {
       "    FAILED $name: ${message.replace("\n", "\n      ")}",
     )
     TestFinished(_, _, _) -> Unit
-    Completed(passed, failed, _) -> println("  ${summaryOf(passed, failed)}")
+    Completed(passed, failed, skipped) -> println("  ${summaryOf(passed, failed, skipped)}")
     Output(text) -> println("  $text")
     Ignored -> Unit
   }
 
-  private summaryOf(
-    passed: Int,
-    failed: Int,
-  ): String = if (passed + failed == 0) "no tests ran" else "$passed passed, $failed failed"
+  private summaryOf(passed: Int, failed: Int, skipped: Int): String =
+    if (passed + failed == 0) "no tests ran"
+    else "$passed passed, $failed failed" + (if (skipped > 0) ", $skipped skipped" else "")
+
+  // The snapshots kept in folder, and in folders in it.
+  @FileSystem private keptIn(
+    folder: Path,
+  ): List<Path> = folder.listFiles().flatMap { if (it.isDirectory()) keptIn(it) else [it] }
 
   // Whether the file marks a function @Test, on a line of its own.
   @FileSystem private hasTests(

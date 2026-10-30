@@ -1,0 +1,138 @@
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.runner.results.*
+
+// What fckt says after a failed assertion, as it writes it.
+facts(lines: List<String>): String = "message\nfckt-assertion 1\n" + lines.joinToString("\n")
+
+// What isn't an assertion's is said as it is, as is an assertion whose facts are of another version.
+@Test whatSaysNoFactsIsAsItIs() = {
+  assertEquals(Failure("on purpose"), Explanations.of("on purpose"))
+  assertEquals(
+    Failure("message\nfckt-assertion 2\nassertion assert"),
+    Explanations.of("message\nfckt-assertion 2\nassertion assert"),
+  )
+}
+
+// An assert says what it checked, and each side of a comparison but a constant, with its value.
+@Test anAssertSaysWhatEachSideWas() = {
+  assertEquals(
+    Failure(
+      "prices.fk line 5: assert(total(items) == expected) failed\n  total(items) is 7\n  expected is 6",
+    ),
+    Explanations.of(
+      facts(
+        [
+          "assertion assert",
+          "where prices.fk line 5",
+          "source assert(total(items) == expected)",
+          "operand total(items)",
+          "value 7",
+          "operand expected",
+          "value 6",
+        ],
+      ),
+    ),
+  )
+  assertEquals(
+    Failure("line 2: assert(xs.isEmpty()) failed"),
+    Explanations.of(facts(["assertion assert", "where line 2", "source assert(xs.isEmpty())"])),
+  )
+}
+
+// assertEquals says both values, and where two long ones on a line first differ.
+@Test assertEqualsSaysBothValues() = {
+  assertEquals(
+    Failure("line 3: assertEquals(1, 2) failed\n  expected: 1\n  actual:   2"),
+    Explanations.of(
+      facts(
+        [
+          "assertion assertEquals",
+          "where line 3",
+          "source assertEquals(1, 2)",
+          "expected 1",
+          "actual 2",
+        ],
+      ),
+    ),
+  )
+  assertEquals(
+    [
+      "expected: the quick brown fox",
+      "actual:   the quick brown cat",
+      "                          ^",
+    ],
+    Differences.between("the quick brown fox", "the quick brown cat"),
+  )
+  assertEquals(
+    ["expected: 1.0", "actual:   1.0", "which are shown the same, but aren't equal"],
+    Differences.between("1.0", "1.0"),
+  )
+}
+
+// Values on more than one line differ line by line, a value's line breaks as they were, \n.
+@Test linesDifferLineByLine() = {
+  assertEquals(
+    Failure(
+      "line 4: assertEquals(expected, built) failed\n  - expected, + actual:\n    > Task :compile\n  -   up to date\n  + > Task :check\n    BUILD SUCCESSFUL",
+    ),
+    Explanations.of(
+      facts(
+        [
+          "assertion assertEquals",
+          "where line 4",
+          "source assertEquals(expected, built)",
+          "expected > Task :compile\\n  up to date\\nBUILD SUCCESSFUL",
+          "actual > Task :compile\\n> Task :check\\nBUILD SUCCESSFUL",
+        ],
+      ),
+    ),
+  )
+  // A backslash is written \\, so \\n is one, then n.
+  assertEquals(
+    Some([("expected", "a\\nb"), ("actual", "a\nb")]),
+    Explanations.factsOf(facts(["expected a\\\\nb", "actual a\\nb"])),
+  )
+}
+
+// Many lines the same are left out, but for those near what's changed.
+@Test longRunsOfTheSameAreLeftOut() = {
+  same = (1..40).map { "line $it" }
+  shown = Differences.between(
+    same.joinToString("\n"),
+    same.map { if (it == "line 20") "line twenty" else it }.joinToString("\n"),
+  )
+  assertEquals(
+    [
+      "- expected, + actual:",
+      "  ...",
+      "  line 17",
+      "  line 18",
+      "  line 19",
+      "- line 20",
+      "+ line twenty",
+      "  line 21",
+      "  line 22",
+      "  line 23",
+      "  ...",
+    ],
+    shown,
+  )
+}
+
+// A snapshot that isn't what was kept says where it's kept, how it differs, and how to keep it.
+@Test aSnapshotSaysHowToKeepIt() = assertEquals(
+  Failure(
+    "snapshot wire/request isn't what was kept in test/snapshots/wire/request.txt, which is expected:\n  expected: GET\n  actual:   POST\n  kiln test -- --update-snapshots keeps it as it is now",
+  ),
+  Explanations.of(
+    facts(
+      [
+        "assertion assertSnapshot",
+        "where snapshot wire/request",
+        "file test/snapshots/wire/request.txt",
+        "expected GET",
+        "actual POST",
+      ],
+    ),
+  ),
+)

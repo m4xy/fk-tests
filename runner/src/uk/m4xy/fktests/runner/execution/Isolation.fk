@@ -2,18 +2,21 @@ import uk.m4xy.fktests.runner.results.*
 import fckt.effects.Fail
 import fckt.effects.Failure.attempt
 
-// Running a test's body on its own: whatever stops it, a failed assertion, fail(...) or an OCaml
-// exception, fails it, and goes no further.
+// Running a test's body on its own: whatever stops it, a failed assertion, fail(...), an OCaml
+// exception or running out of time, fails it, and goes no further, with why, as Explanations says.
 module Isolation {
-  // How body went: passed, unless something stopped it.
+  // How body went, given seconds to run, or as long as it takes if that's 0: passed, unless
+  // something stopped it.
   run<@E>(
     body: @Fail @E () -> Unit,
-  ): Outcome = when (attempt { caught(body).map { fail(it) }.getOrElse(Unit) }) {
+    seconds: Int = 0,
+  ): Outcome = when (attempt { caught(body, seconds).map { fail(it) }.getOrElse(Unit) }) {
     Ok(_) -> Passed
-    Error(reason) -> Failed(Failure(reason))
+    Error(reason) -> Failed(Explanations.of(reason))
   }
 
-  // What stopped body, an assertion that failed or an OCaml exception, if anything did.
-  private external caught(body: () -> Unit): Option<String> =
-    "(fun f -> try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) body"
+  // What stopped body, an assertion that failed, an OCaml exception, or its time running out, if
+  // anything did. The time is an alarm, which interrupts it wherever it is, waiting or not.
+  private external caught(body: () -> Unit, seconds: Int): Option<String> =
+    "(fun f s -> let stop = Sys.Signal_handle (fun _ -> failwith (Printf.sprintf \"took longer than %ds, so it was stopped\" s)) in let before = Sys.signal Sys.sigalrm stop in ignore (Unix.alarm s); let r = (try f (); None with Failure m -> Some m | e -> Some (Printexc.to_string e)) in ignore (Unix.alarm 0); Sys.set_signal Sys.sigalrm before; r) body seconds"
 }

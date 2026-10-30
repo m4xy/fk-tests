@@ -11,12 +11,15 @@ module ConsoleReport : TestEvents {
   testStarted(id: TestId): Unit = Unit
   @Console testFinished(result: TestResult): Unit = when (result.outcome) {
     Passed -> println("  passed ${result.id.qualifiedName}")
-    Failed(failure) -> println("  FAILED ${result.id.qualifiedName}: ${failure.message}")
+    Failed(failure) -> println(
+      "  FAILED ${result.id.qualifiedName}: ${failure.message.replace("\n", "\n    ")}",
+    )
     Skipped -> Unit
   }
   suiteFinished(suite: Path): Unit = Unit
   @Console completed(summary: Summary): Unit =
     println(
-      if (summary.passed + summary.failed == 0) "no tests ran" else "${summary.passed} passed, ${summary.failed} failed",
+      if (summary.passed + summary.failed == 0) "no tests ran"
+      else "${summary.passed} passed, ${summary.failed} failed" + (if (summary.skipped > 0) ", ${summary.skipped} skipped" else ""),
     )
 }

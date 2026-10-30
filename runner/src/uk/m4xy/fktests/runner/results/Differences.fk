@@ -1,0 +1,101 @@
+import fckt.collections.Array
+import fckt.collections.Arrays.*
+
+// How two values, as they're shown, differ: on one line each, with where they first differ marked
+// when it's far in; or, if either is on more than one, line by line, as the fewest changes from
+// the one expected to the actual one have it, the lines taken away marked -, those added +.
+module Differences {
+  // Lines that show how actual differs from expected.
+  between(expected: String, actual: String): List<String> =
+    if (expected.contains("\n") || actual.contains("\n")) ["- expected, + actual:"] + shortened(
+      changes(expected.lines(), actual.lines()),
+    ).map { text(it) }
+    else {
+      first = firstDifference(expected, actual)
+      ["expected: $expected", "actual:   $actual"] +
+        (if (first >= 10) [" ".repeat(10 + first) + "^"] else []) +
+        (if (expected == actual) ["which are shown the same, but aren't equal"] else [])
+    }
+
+  // The lines of expected, each kept or taken away, and those added, as the fewest changes have them.
+  changes(expected: List<String>, actual: List<String>): List<Change> = {
+    xs = expected.toArray()
+    ys = actual.toArray()
+    width = ys.size + 1
+    // At i * width + j: how many lines, in order, expected from i and actual from j have in common.
+    common = arrayOf((xs.size + 1) * width, 0)
+    (0..<xs.size).reversed().forEach { i ->
+      (0..<ys.size).reversed().forEach { j ->
+        common.set(
+          i * width + j,
+          if (xs.get(i) == ys.get(j)) common.get((i + 1) * width + j + 1) + 1
+          else max(common.get((i + 1) * width + j), common.get(i * width + j + 1)),
+        )
+      }
+    }
+    walk(xs, ys, common, width, 0, 0)
+  }
+
+  // The changes from line i of xs and j of ys on, each line in common kept, a line taken away
+  // before one's added.
+  private walk(
+    xs: Array<String>,
+    ys: Array<String>,
+    common: Array<Int>,
+    width: Int,
+    i: Int,
+    j: Int,
+  ): List<Change> =
+    if (i < xs.size && j < ys.size && xs.get(i) == ys.get(j)) [Kept(xs.get(i))] + walk(
+      xs,
+      ys,
+      common,
+      width,
+      i + 1,
+      j + 1,
+    )
+    else if (i < xs.size && (j == ys.size || common.get((i + 1) * width + j) >= common.get(i * width + j + 1))) [
+      Removed(xs.get(i)),
+    ] + walk(
+      xs,
+      ys,
+      common,
+      width,
+      i + 1,
+      j,
+    )
+    else if (j < ys.size) [Added(ys.get(j))] + walk(xs, ys, common, width, i, j + 1)
+    else []
+
+  // Long runs of kept lines, of many, shortened to the three either side of what's changed.
+  private shortened(changes: List<Change>): List<Change> =
+    if (changes.size <= 30) changes
+    else {
+      changed = changes.withIndex().filter { _, c -> !isKept(c) }.map { i, _ -> i }
+      changes.withIndex().fold([]) { shown, indexed ->
+        (i, c) = indexed
+        if (changed.any { abs(it - i) <= 3 }) shown + [c]
+        else if (shown.lastOrNone() == Some(Elided)) shown
+        else shown + [Elided]
+      }
+    }
+
+  // Where two strings first differ, or the length of the shorter if one starts the other.
+  private firstDifference(a: String, b: String): Int = {
+    i = a.toList().zip(b.toList()).indexOfFirst { x, y -> x != y }
+    if (i < 0) min(a.length, b.length) else i
+  }
+
+  private isKept(change: Change): Boolean = when (change) {
+    Kept(_) -> true
+    else -> false
+  }
+
+  // A line of a difference, as it's shown.
+  private text(change: Change): String = when (change) {
+    Kept(line) -> "  $line"
+    Removed(line) -> "- $line"
+    Added(line) -> "+ $line"
+    Elided -> "  ..."
+  }
+}

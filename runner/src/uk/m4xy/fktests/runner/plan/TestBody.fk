@@ -1,0 +1,9 @@
+import fckt.effects.Fail
+
+// What a test does, which fails it by failing, as a failed assert does.
+type TestBody<@E> {
+  // One thing.
+  Single(run: @Fail @E () -> Unit),
+  // Cases, which it gives when it's run: a name and what it does, each run on its own.
+  Cases(cases: @Fail @E () -> List<(String, @Fail @E () -> Unit)>),
+}

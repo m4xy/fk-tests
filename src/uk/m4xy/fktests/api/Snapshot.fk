@@ -1,0 +1,18 @@
+// Checking what a test makes against what was kept: assertSnapshot("wire/request", sent) fails
+// unless sent is what was kept as wire/request, and the first time, keeps it.
+//
+//   import uk.m4xy.fktests.api.*
+//   import uk.m4xy.fktests.api.Snapshot.*
+//
+//   @Test @Snapshots request() = assertSnapshot("wire/request", Wire.requestBytes(request).decodeToString())
+module Snapshot {
+  // Fails unless actual is what's kept as name; the first time, keeps it. It fails where it's
+  // called, in the test, wherever what keeps them is.
+  @Snapshots assertSnapshot(
+    name: String,
+    actual: String,
+  ): Unit = when (checkSnapshot(name, actual)) {
+    Some(problem) -> error(problem)
+    None -> Unit
+  }
+}

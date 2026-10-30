@@ -1,5 +1,5 @@
 import fckt.io.Path
 
 // Which test: the file it's in, as a path from the tests' folder, prices.fk; the sections it's in
-// there, modules, outermost first; and its name.
-type TestId(file: Path, sections: List<String>, name: String)
+// there, modules, outermost first; its name; and of a test that gives its cases, which case.
+type TestId(file: Path, sections: List<String>, name: String, case: Option<String> = None)

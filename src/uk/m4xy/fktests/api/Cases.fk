@@ -1,0 +1,18 @@
+import fckt.effects.Fail
+
+// A test that gives its cases, each run on its own, and reported as the test's, with its name,
+// as sums[empty]: one failing doesn't stop the others. Each runs inside the test's fixtures.
+//
+//   @Test sums() = cases([("pair", ([1, 2], 3)), ("empty", ([], 0))]) { items, total ->
+//     assertEquals(total, Prices.total(items))
+//   }
+//
+// A case is a name and what it does, so a test can give them as it likes: [("empty", () -> ...)].
+module Cases {
+  // A case for each of rows, a name and what the case checks, checked by check.
+  cases<A, @E>(
+    rows: List<(String, A)>,
+    check: @Fail @E (A) -> Unit,
+  ): List<(String, @Fail @E () -> Unit)> =
+    rows.map { name, row -> (name, () -> check(row)) }
+}

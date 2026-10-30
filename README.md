@@ -36,7 +36,9 @@ $ kiln build
 > Task :test
   prices.fk
     passed sumsItems
-    FAILED emptyIsZero: prices.fk line 5: expected:<0> but was:<1>
+    FAILED emptyIsZero: prices.fk line 5: assertEquals(0, Prices.total([])) failed
+      expected: 0
+      actual:   1
   1 passed, 1 failed
 BUILD FAILED: tests failed
 $ kiln test -- sumsItems      # or prices.fk, prices.fk::sumsItems, or a section, prices.fk::Totals
@@ -46,6 +48,69 @@ A test is a function with no parameters, marked `@Test`, in a file in `test`, or
 one: its section, as `Totals.sumsItems`. A failed `assert`, `fail(...)` or an exception fails just
 that test; its effects are main's, handled as main's are. The other files there are what the tests
 share.
+
+A failed assertion says what it checked and how it went: an `assert` of a comparison, each side's
+value, and `assertEquals`, both values, with where two long ones on a line first differ, or, if
+either is on more than one, how they differ line by line, `-` the lines expected, `+` the actual:
+
+```
+    FAILED totals: prices.fk line 9: assert(Prices.total(items) == expected) failed
+      Prices.total(items) is 7
+      expected is 6
+    FAILED builds: builds.fk line 14: assertEquals(expected, built) failed
+      - expected, + actual:
+        > Task :compile
+      -   up to date
+      + > Task :check
+        BUILD SUCCESSFUL
+```
+
+`kiln test -- --without Network` skips the tests that do an effect, by its name or its full name,
+and can be given again; the tests are told what they do, so a test of what's offline needs no tag.
+A test that runs for longer than five minutes is stopped, and fails, wherever it is: a
+`TestConfiguration`'s `timeout()` gives them longer, or `0`, as long as they take.
+
+## Cases
+
+A test that gives anything but `Unit` gives its cases, each a name and what it does: each runs on
+its own, inside the test's fixtures, and is reported with its name, so one failing doesn't hide
+the others. `Cases.cases` makes them of rows, each with its name:
+
+```kotlin
+import uk.m4xy.fktests.api.Cases.*
+
+@Test sums() = cases([("pair", ([1, 2], 3)), ("empty", ([], 0))]) { items, total ->
+  assertEquals(total, Prices.total(items))
+}
+```
+
+```
+    passed sums[pair]
+    FAILED sums[empty]: prices.fk line 4: assertEquals(total, Prices.total(items)) failed
+      expected: 0
+      actual:   1
+```
+
+`kiln test -- sums` runs them all, and `prices.fk::sums` too.
+
+## Snapshots
+
+What a test makes can be kept, and checked against next time, rather than written into the test:
+`assertSnapshot(name, actual)` fails unless `actual` is what was kept as `name`, and says how it
+differs. A test that does says `@Snapshots`:
+
+```kotlin
+import uk.m4xy.fktests.api.*
+import uk.m4xy.fktests.api.Snapshot.*
+
+@Test @Snapshots request() = assertSnapshot("wire/request", Wire.requestBytes(request).decodeToString())
+```
+
+They're kept in the tests' folder, as `test/snapshots/wire/request.txt`, to be committed with them.
+One that's missing is kept the first time, unless `CI` is set, where it fails, as it should have
+been committed; `kiln test -- --update-snapshots` keeps each that's changed as it is now. What's
+kept is the tests', so changing it runs them again. `Snapshots` is an effect, which main handles
+with `SnapshotFiles`; a test of something that uses snapshots can keep them itself.
 
 ## Formats
 
@@ -94,8 +159,8 @@ fk-tests          uk.m4xy.fktests.api        What tests are written with: Test, 
 
 fk-tests-runner   uk.m4xy.fktests.runner     What runs them. Only the program made from the tests uses it.
                   ├── Runner                 What fckt's main calls: test, suite and plan make the plan; main runs it
-                  ├── plan                   What's to run: Plan, Suite, TestCase, TestId, Location
-                  ├── results                How it went: TestResult, its Outcome, a Failure, a Summary, and Summaries.of
+                  ├── plan                   What's to run: Plan, Suite, TestCase, its TestBody, TestId, Location
+                  ├── results                How it went: TestResult, its Outcome, a Failure, as Explanations says it, with its Differences; a Summary, and Summaries.of
                   ├── events                 TestEvents, what a run tells whoever's listening
                   ├── execution              Execution.run walks the plan; Selections chooses, Isolation runs a test on its own
                   └── reporting              Handlers of TestEvents: ConsoleReport, LineReport
@@ -139,12 +204,18 @@ module KilnTests : TestConfiguration {
 }
 ```
 
-`Execution` runs each test on its own, to a `TestResult`: passed, failed with a `Failure`, or
-skipped, as the `Selection` chooses; then a `Summary`. `Runner` reads the `Selection` from the
+`Execution` runs each test on its own, or each of its cases, to a `TestResult`: passed, failed
+with a `Failure`, or skipped, as the `Selection` chooses, or as it does an effect it's run without;
+then a `Summary`. `Isolation` runs it with an alarm, which stops it when its time's up, and has
+`Explanations` say why it failed: fckt follows a failed assertion's message with what it checked,
+as fckt's README has it, which `Explanations` reads. `Runner` reads the `Selection` from the
 arguments, a `Selector` each, written as pytest's are: `sums`, every test of that name;
 `prices.fk`, every test in that file; `prices.fk::sums`, that one test; `prices.fk::Totals`, the
-tests in that section, and `prices.fk::Totals.sums`, one of them. Files are `Path`s, from the
-tests' folder. It doesn't print: it
+tests in that section, and `prices.fk::Totals.sums`, one of them; and its options, `--without`,
+`--timeout`, `--snapshots` and `--update-snapshots`. Files are `Path`s, from the tests' folder.
+fckt's main tells it what each test does, so it needs no tags, and the runner uses nothing of
+what tests are written with: a test's cases are pairs, and snapshots an effect the tests see,
+with its handler. It doesn't print: it
 tells `TestEvents`, as each suite and test starts and finishes, and when the run's done. A handler
 reports them: `ConsoleReport`, for people; `LineReport`, an event a line, with `--report lines`,
 which the plugin reads, to show them under its task; or one a test makes, as the runner's own

@@ -1,0 +1,12 @@
+import fckt.effects.Fail
+import fckt.io.FileSystem
+import fckt.io.Process
+
+// What a test makes, kept to check it against next time, rather than written into the test, as
+// Snapshot.assertSnapshot checks it. main keeps them as files, as SnapshotFiles does; a test of
+// what uses them can keep them itself.
+@Fail @FileSystem @Process @HandledBy(SnapshotFiles) effect Snapshots {
+  // What's wrong with actual as what's kept as name, if anything, said as a failed assertion says
+  // it; the first time, keeps it.
+  checkSnapshot(name: String, actual: String): Option<String>
+}

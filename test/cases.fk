@@ -1,0 +1,11 @@
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.api.Cases.*
+
+// A case for each row, by its name, which checks it.
+@Test casesAreNamedRows() = assertEquals(
+  ["two", "four"],
+  cases([("two", 2), ("four", 4)]) { n -> assert(n > 0) }.map { name, _ -> name },
+)
+
+// A test that gives its cases, as the runner runs them, each on its own.
+@Test evens() = cases([("two", 2), ("four", 4)]) { n -> assertEquals(0, n % 2) }

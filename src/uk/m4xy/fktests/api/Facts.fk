@@ -1,0 +1,7 @@
+// A failure as fckt's assertions say theirs: its message, then a line fckt-assertion 1 and a line
+// for each fact, its key and value, with \ and a line break in it written \\ and \n, which the
+// runner reads to say more than the message can.
+internal module Facts {
+  failure(message: String, facts: List<(String, String)>): String =
+    message + "\nfckt-assertion 1" + facts.map { key, value -> "\n$key ${value.replace("\\", "\\\\").replace("\n", "\\n")}" }.joinToString("")
+}

@@ -8,11 +8,16 @@ module Selections {
     Only(selectors) -> selectors.any { chooses(it, id) }
   }
 
-  // Whether selector chooses the test id is.
+  // Whether selector chooses the test id is: a test that gives its cases, each of them.
   chooses(selector: Selector, id: TestId): Boolean = when (selector) {
     Test(name) -> id.name == name
     File(file) -> id.file == file
     Section(file, sections) -> id.file == file && id.sections.take(sections.size) == sections
-    Exactly(wanted) -> id == wanted
+    Exactly(wanted) -> id == wanted || (wanted.case == None && id.copy(case = None) == wanted)
   }
+
+  // Whether a test that does effects, by their full names, does any of named, each an effect's
+  // full name, uk.m4xy.http.Network, or its own, Network.
+  does(effects: List<String>, named: List<String>): Boolean =
+    effects.any { effect -> named.any { it == effect || it == effect.split(".").lastOrNone().getOrElse(effect) } }
 }

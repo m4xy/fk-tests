@@ -13,15 +13,34 @@ import fckt.io.Console
 // program uses it, never a test.
 module Runner {
   // A test: fckt's main makes one for each function marked @Test, in file, a path from the tests'
-  // folder, in the modules sections names there.
+  // folder, in the modules sections names there, which does effects, by their full names.
   test<@E>(
     file: String,
     sections: List<String>,
     name: String,
     line: Int,
+    effects: List<String>,
     body: @Fail @E () -> Unit,
   ): TestCase<@E> =
-    TestCase(TestId(path(file), sections, name), Location(path(file), line), body)
+    TestCase(TestId(path(file), sections, name), Location(path(file), line), effects, Single(body))
+
+  // A test that gives its cases: fckt's main makes one for each function marked @Test that gives
+  // anything but Unit, with around, which runs a case inside the test's fixtures.
+  cases<@E, @F>(
+    file: String,
+    sections: List<String>,
+    name: String,
+    line: Int,
+    effects: List<String>,
+    given: @Fail @F () -> List<(String, @Fail @E () -> Unit)>,
+    around: @Fail @F (@Fail @E () -> Unit) -> Unit,
+  ): TestCase<@F> =
+    TestCase(
+      TestId(path(file), sections, name),
+      Location(path(file), line),
+      effects,
+      Cases(() -> given().map { case, check -> (case, () -> around(check)) }),
+    )
 
   // A file's tests.
   suite<@E>(file: String, tests: List<TestCase<@E>>): Suite<@E> = Suite(path(file), tests)
@@ -30,20 +49,41 @@ module Runner {
   plan<@E>(suites: List<Suite<@E>>): Plan<@E> = Plan(suites)
 
   // Runs plan as args say, reported as they say, then exits with 1 if any test failed, or 2 if args
-  // don't say what they mean. args choose which run, as selectorOf reads them, and --report lines
-  // reports as LineReport does, for another program; ConsoleReport, for people, if not.
+  // don't say what they mean. args choose which run, as selectorOf reads them; --without Network
+  // skips the tests that do an effect, by its name or full name, and can be given again; each test
+  // has --timeout seconds, or 300, to run, or as long as it takes with 0; --snapshots says where
+  // they're kept, and --update-snapshots keeps them as they are now; and --report lines reports as
+  // LineReport does, for another program; ConsoleReport, for people, if not.
   @Console @Clock @Process main<@E>(
     args: List<String>,
     plan: Plan<@E>,
-  ): Unit = when (selectionOf(args)) {
-    Error(problem) -> {
-      println("fk-tests: $problem")
-      exit(2)
-    }
-    Ok(selection) -> {
+  ): Unit = when ((selectionOf(args), secondsOf(args))) {
+    (Error(problem), _) -> refuse(problem)
+    (_, Error(problem)) -> refuse(problem)
+    (Ok(selection), Ok(seconds)) -> {
+      valueOf(args, "--snapshots").forEach { setEnv("FK_TESTS_SNAPSHOTS", it) }
+      if (args.contains("--update-snapshots")) setEnv("FK_TESTS_UPDATE_SNAPSHOTS", "1")
       report = if (reportOf(args) == Lines) LineReport else ConsoleReport
-      summary = report { Execution.run(plan, selection) }
+      summary = report { Execution.run(plan, selection, valuesOf(args, "--without"), seconds) }
       if (summary.failed > 0) exit(1)
+    }
+  }
+
+  private notSeconds(
+    text: String,
+  ): String = "--timeout is a number of seconds, or 0 for as long as a test takes, not $text"
+
+  @Console @Process private refuse(problem: String): Unit = {
+    println("fk-tests: $problem")
+    exit(2)
+  }
+
+  // How long args give each test, in seconds: --timeout's, or 300.
+  secondsOf(args: List<String>): Result<Int, String> = when (valueOf(args, "--timeout")) {
+    None -> Ok(300)
+    Some(text) -> when (text.toIntOrNone()) {
+      Some(seconds) -> if (seconds >= 0) Ok(seconds) else Error(notSeconds(text))
+      None -> Error(notSeconds(text))
     }
   }
 
@@ -83,10 +123,24 @@ module Runner {
   }
 
   // How args say to report: --report lines, for another program, or for people.
-  reportOf(args: List<String>): Report = when (args) {
-    [] -> Readable
-    ["--report", "lines", *_] -> Lines
-    [_, *rest] -> reportOf(rest)
+  reportOf(
+    args: List<String>,
+  ): Report = if (valueOf(args, "--report") == Some("lines")) Lines else Readable
+
+  // What args give option, the last time they give it.
+  private valueOf(
+    args: List<String>,
+    option: String,
+  ): Option<String> = valuesOf(args, option).lastOrNone()
+
+  // What args give option, each time they give it.
+  private valuesOf(args: List<String>, option: String): List<String> = when (args) {
+    [] -> []
+    [o, value, *rest] -> if (o == option) [value] + valuesOf(rest, option) else valuesOf(
+      [value] + rest,
+      option,
+    )
+    [_] -> []
   }
 
   private isFile(text: String): Boolean = text.endsWith(".fk") && text.length > 3
@@ -102,10 +156,16 @@ module Runner {
   private unreadable(arg: String): String =
     "can't tell which tests '$arg' means: a test's name, sums; a file, prices.fk; a file's test, prices.fk::sums; or a section of it, prices.fk::Totals"
 
+  // args without the options and what they give, which leaves the selectors.
   private withoutOptions(args: List<String>): List<String> = when (args) {
     [] -> []
-    ["--report", _, *rest] -> withoutOptions(rest)
-    [a, *rest] -> [a] + withoutOptions(rest)
+    [a, *rest] ->
+      if (valued.contains(a)) withoutOptions(rest.drop(1))
+      else if (a == "--update-snapshots") withoutOptions(rest)
+      else [a] + withoutOptions(rest)
   }
+
+  // The options that give something.
+  private valued: List<String> = ["--report", "--without", "--timeout", "--snapshots"]
 
 }

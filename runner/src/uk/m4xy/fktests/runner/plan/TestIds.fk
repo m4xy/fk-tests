@@ -1,5 +1,7 @@
 // What's said of a test's id.
 module TestIds {
-  // Its name, through its sections: Counting.Deeper.deep.
-  TestId.qualifiedName: String = (this.sections + [this.name]).joinToString(".")
+  // Its name, through its sections, and its case, if it's one: Counting.Deeper.deep, sums[empty].
+  TestId.qualifiedName: String = (this.sections + [this.name]).joinToString(
+    ".",
+  ) + this.case.map { "[$it]" }.getOrElse("")
 }

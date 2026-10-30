@@ -1,0 +1,9 @@
+// A line of a difference.
+type Change {
+  Kept(line: String),
+  Removed(line: String),
+  Added(line: String),
+  // Kept lines left out.
+  Elided,
+}
+

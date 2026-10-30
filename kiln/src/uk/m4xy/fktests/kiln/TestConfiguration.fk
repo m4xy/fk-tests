@@ -22,4 +22,7 @@ spec TestConfiguration {
   // What they run or read besides their own code, as the program compile makes: where one has
   // changed, they run again.
   inputs(): List<Path> = []
+  // How long each test has to run, in seconds, before it's stopped and fails, or 0 for as long as
+  // it takes.
+  timeout(): Int = 300
 }

@@ -33,7 +33,12 @@ import fckt.io.Processes.*
 // written with its fk-tests: its settings.fk and build.fk.
 @FileSystem @Process testedProject(folder: Path, name: String): Unit = {
   repo = path(here()).resolve("..").value
-  write(folder, "settings.fk", "settings = Settings(uses = [projectAt(\"$repo/kiln\")])\n")
+  // An item to a line, as fckt --format has a list too wide for its line, which a long path makes it.
+  write(
+    folder,
+    "settings.fk",
+    "settings = Settings(\n  uses = [\n    projectAt(\n      \"$repo/kiln\",\n    ),\n  ],\n)\n",
+  )
   write(folder, "build.fk", """import uk.m4xy.kiln.fckt.Fckt
 import uk.m4xy.fktests.kiln.*
 

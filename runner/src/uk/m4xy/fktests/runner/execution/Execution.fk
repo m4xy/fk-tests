@@ -1,17 +1,25 @@
 import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
+import fckt.effects.Fail
 import fckt.time.*
 import fckt.time.Times.*
 
-// Running a plan: each suite with any test chosen, and each chosen test in it, telling TestEvents
-// as it goes. What's chosen, how a test runs on its own, how long it takes and how the run went,
-// it asks Selections, Isolation, Clock and Summaries.
+// Running a plan: each suite with any test chosen, and each chosen test in it, or each of its
+// cases, telling TestEvents as it goes. What's chosen, how a test runs on its own, how long it takes
+// and how the run went, it asks Selections, Isolation, Clock and Summaries.
 module Execution {
-  // Runs what selection chooses of plan, and says how it went.
-  @TestEvents @Clock run<@E>(plan: Plan<@E>, selection: Selection): Summary = {
+  // Runs what selection chooses of plan, but tests that do any of the effects without names, as
+  // Network or uk.m4xy.http.Network, each given seconds, or as long as it takes if that's 0; and
+  // says how it went.
+  @TestEvents @Clock run<@E>(
+    plan: Plan<@E>,
+    selection: Selection,
+    without: List<String> = [],
+    seconds: Int = 0,
+  ): Summary = {
     started = now()
-    results = plan.suites.flatMap { runSuite(it, selection) }
+    results = plan.suites.flatMap { runSuite(it, selection, without, seconds) }
     summary = Summaries.of(results, started.until(now()))
     completed(summary)
     summary
@@ -21,23 +29,52 @@ module Execution {
   @TestEvents @Clock private runSuite<@E>(
     suite: Suite<@E>,
     selection: Selection,
+    without: List<String>,
+    seconds: Int,
   ): List<TestResult> = {
-    (chosen, others) = suite.cases.partition { Selections.selects(selection, it.id) }
+    (chosen, others) = suite.cases.partition { Selections.selects(selection, it.id) && !Selections.does(it.effects, without) }
     skipped = others.map { TestResult(it.id, Skipped, Duration(0)) }
     if (chosen.isEmpty()) skipped
     else {
       suiteStarted(suite.file)
-      results = chosen.map { runCase(it) }
+      results = chosen.flatMap { runCase(it, seconds) }
       suiteFinished(suite.file)
       results + skipped
     }
   }
 
-  @TestEvents @Clock private runCase<@E>(test: TestCase<@E>): TestResult = {
-    testStarted(test.id)
+  // A test, or each of the cases it gives, unless giving them fails it; with none, it's skipped.
+  @TestEvents @Clock private runCase<@E>(
+    test: TestCase<@E>,
+    seconds: Int,
+  ): List<TestResult> = when (test.body) {
+    Single(body) -> [runOne(test.id, body, seconds)]
+    Cases(cases) -> {
+      var given = []
+      started = now()
+      outcome = Isolation.run(() -> { given = cases() }, seconds)
+      // A test with no cases has nothing to run, as one not chosen hasn't.
+      if (outcome == Passed && given.isEmpty()) [TestResult(test.id, Skipped, Duration(0))]
+      else if (outcome == Passed) given.map { name, body -> runOne(test.id.copy(case = Some(name)), body, seconds) }
+      else {
+        // The test, which failed before it had any cases.
+        testStarted(test.id)
+        result = TestResult(test.id, outcome, started.until(now()))
+        testFinished(result)
+        [result]
+      }
+    }
+  }
+
+  @TestEvents @Clock private runOne<@E>(
+    id: TestId,
+    body: @Fail @E () -> Unit,
+    seconds: Int,
+  ): TestResult = {
+    testStarted(id)
     started = now()
-    outcome = Isolation.run(test.body)
-    result = TestResult(test.id, outcome, started.until(now()))
+    outcome = Isolation.run(body, seconds)
+    result = TestResult(id, outcome, started.until(now()))
     testFinished(result)
     result
   }
