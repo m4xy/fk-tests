@@ -67,8 +67,17 @@ either is on more than one, how they differ line by line, `-` the lines expected
 
 `kiln test -- --without Network` skips the tests that do an effect, by its name or its full name,
 and can be given again; the tests are told what they do, so a test of what's offline needs no tag.
-A test that runs for longer than five minutes is stopped, and fails, wherever it is: a
-`TestConfiguration`'s `timeout()` gives them longer, or `0`, as long as they take.
+A test that runs for longer than five minutes is stopped, and fails: a `TestConfiguration`'s
+`timeout()` gives them longer, or `0`, as long as they take.
+
+Tests run together, as many at once as the machine has cores, or as `kiln test -- --jobs 4` says,
+in the one program. They take turns: while one waits for what it reads, from a program it runs, a
+file or a socket, the others go on, so tests that run programs, as a build tool's do, take as long
+as the slowest rather than all of them added up. What's reported is in the order the tests are
+written, as if they ran one at a time. A test stuck working rather than waiting can't be stopped
+while others run, only once it next reads; `--jobs 1` runs them one at a time, each stopped
+wherever it is when its time is up. Tests that run together share the program's environment and
+working folder, and the files they write, so each should write its own.
 
 ## Cases
 
@@ -206,13 +215,16 @@ module KilnTests : TestConfiguration {
 
 `Execution` runs each test on its own, or each of its cases, to a `TestResult`: passed, failed
 with a `Failure`, or skipped, as the `Selection` chooses, or as it does an effect it's run without;
-then a `Summary`. `Isolation` runs it with an alarm, which stops it when its time's up, and has
+then a `Summary`. With more than one job, each test is a task, under `fckt.io.Polls`, and `Polled`
+handles what it reads, `Channel`, waiting as a task until there's something to read; what's
+finished is told in the plan's order. `Isolation` runs it with an alarm, which stops it when its
+time's up, one at a time, and has
 `Explanations` say why it failed: fckt follows a failed assertion's message with what it checked,
 as fckt's README has it, which `Explanations` reads. `Runner` reads the `Selection` from the
 arguments, a `Selector` each, written as pytest's are: `sums`, every test of that name;
 `prices.fk`, every test in that file; `prices.fk::sums`, that one test; `prices.fk::Totals`, the
 tests in that section, and `prices.fk::Totals.sums`, one of them; and its options, `--without`,
-`--timeout`, `--snapshots` and `--update-snapshots`. Files are `Path`s, from the tests' folder.
+`--timeout`, `--jobs`, `--snapshots` and `--update-snapshots`. Files are `Path`s, from the tests' folder.
 fckt's main tells it what each test does, so it needs no tags, and the runner uses nothing of
 what tests are written with: a test's cases are pairs, and snapshots an effect the tests see,
 with its handler. It doesn't print: it

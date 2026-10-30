@@ -2,24 +2,35 @@ import uk.m4xy.fktests.runner.plan.*
 import uk.m4xy.fktests.runner.results.*
 import uk.m4xy.fktests.runner.events.TestEvents
 import fckt.effects.Fail
+import fckt.effects.Failure.attempt
 import fckt.time.*
 import fckt.time.Times.*
+import fckt.io.Channel
+import fckt.io.Path
+import fckt.io.Polls
+import fckt.io.Polling
+import fckt.concurrent.*
+import fckt.collections.Maps.*
 
 // Running a plan: each suite with any test chosen, and each chosen test in it, or each of its
 // cases, telling TestEvents as it goes. What's chosen, how a test runs on its own, how long it takes
 // and how the run went, it asks Selections, Isolation, Clock and Summaries.
 module Execution {
   // Runs what selection chooses of plan, but tests that do any of the effects without names, as
-  // Network or uk.m4xy.http.Network, each given seconds, or as long as it takes if that's 0; and
-  // says how it went.
-  @TestEvents @Clock run<@E>(
+  // Network or uk.m4xy.http.Network, each given seconds, or as long as it takes if that's 0, up to
+  // jobs of them at once; and says how it went. Tests run at once take turns, each going on while
+  // the others wait for what they read, as from the programs they run; what they tell TestEvents
+  // is told in the order the plan has them, as one at a time would tell it.
+  @TestEvents @Clock @Channel run<@E>(
     plan: Plan<@E>,
     selection: Selection,
     without: List<String> = [],
     seconds: Int = 0,
+    jobs: Int = 1,
   ): Summary = {
     started = now()
-    results = plan.suites.flatMap { runSuite(it, selection, without, seconds) }
+    results = if (jobs > 1) together(plan, selection, without, seconds, jobs)
+    else plan.suites.flatMap { runSuite(it, selection, without, seconds) }
     summary = Summaries.of(results, started.until(now()))
     completed(summary)
     summary
@@ -78,4 +89,137 @@ module Execution {
     testFinished(result)
     result
   }
+
+  // What's still to run, as tasks take it, and what's to tell, in the plan's order.
+  private type Together<@E>(
+    var waiting: List<(Int, TestCase<@E>)>,
+    var finished: Map<Int, List<TestResult>>,
+    var steps: List<Step>,
+    var results: List<TestResult>,
+  )
+
+  // What's told of a suite: its start; each test chosen in it, by where it is among those run; and
+  // its finish, with the tests skipped.
+  private type Step {
+    Begin(suite: Path),
+    Ran(index: Int),
+    End(suite: Path, skipped: List<TestResult>),
+    // A suite with none chosen, which isn't told.
+    Unrun(skipped: List<TestResult>),
+  }
+
+  @TestEvents @Clock @Channel private together<@E>(
+    plan: Plan<@E>,
+    selection: Selection,
+    without: List<String>,
+    seconds: Int,
+    jobs: Int,
+  ): List<TestResult> = {
+    var index = 0
+    var waiting: List<(Int, TestCase<@E>)> = []
+    steps = plan.suites.flatMap { suite ->
+      (chosen, others) = suite.cases.partition { Selections.selects(selection, it.id) && !Selections.does(it.effects, without) }
+      skipped = others.map { TestResult(it.id, Skipped, Duration(0)) }
+      if (chosen.isEmpty()) [Unrun(skipped)]
+      else [Begin(suite.file)] + chosen.map { test ->
+        waiting = waiting + [(index, test)]
+        index = index + 1
+        Ran(index - 1)
+      } + [End(suite.file, skipped)]
+    }
+    state = Together(waiting, emptyMap(), steps, [])
+    // Each task ends once there's nothing left to take, so the run does.
+    attempt {
+      Polls.running {
+        tasks = (1..min(jobs, waiting.size)).map { launch { take(state, seconds) } }
+        tasks.forEach { join(it) }
+      }
+    }
+    tell(state)
+    state.results
+  }
+
+  // Runs the tests waiting, one after another, as others do the same, telling what's finished.
+  @TestEvents @Clock @Channel @Concurrent<@Polling @Clock @E2> @Polling private take<@E, @E2>(
+    state: Together<@E>,
+    seconds: Int,
+  ): Unit = when (state.waiting) {
+    [] -> Unit
+    [next, *rest] -> {
+      state.waiting = rest
+      (index, test) = next
+      state.finished = state.finished.put(index, quietly(test, seconds))
+      tell(state)
+      take(state, seconds)
+    }
+  }
+
+  // What's finished, told, until a test that hasn't.
+  @TestEvents private tell<@E>(state: Together<@E>): Unit = when (state.steps) {
+    [] -> Unit
+    [step, *rest] -> when (step) {
+      Begin(suite) -> {
+        suiteStarted(suite)
+        state.steps = rest
+        tell(state)
+      }
+      Ran(index) -> when (state.finished.get(index)) {
+        Some(results) -> {
+          results.forEach { result ->
+            testStarted(result.id)
+            testFinished(result)
+          }
+          state.results = state.results + results
+          state.steps = rest
+          tell(state)
+        }
+        None -> Unit
+      }
+      End(suite, skipped) -> {
+        suiteFinished(suite)
+        state.results = state.results + skipped
+        state.steps = rest
+        tell(state)
+      }
+      Unrun(skipped) -> {
+        state.results = state.results + skipped
+        state.steps = rest
+        tell(state)
+      }
+    }
+  }
+
+  // A test, or each of the cases it gives, as runCase has it, but untold, its reading done as a
+  // task, so others go on while it waits, given until seconds after it starts.
+  @Clock @Channel @Concurrent<@Polling @Clock @E2> @Polling private quietly<@E, @E2>(
+    test: TestCase<@E>,
+    seconds: Int,
+  ): List<TestResult> = {
+    started = now()
+    until = if (seconds > 0) Some(started + Duration(seconds * 1000)) else None
+    when (test.body) {
+      Single(body) -> [TestResult(test.id, polled(until, seconds, body), started.until(now()))]
+      Cases(cases) -> {
+        var given = []
+        outcome = polled(until, seconds, () -> { given = cases() })
+        if (outcome == Passed && given.isEmpty()) [TestResult(test.id, Skipped, Duration(0))]
+        else if (outcome == Passed) given.map { name, body ->
+          began = now()
+          TestResult(
+            test.id.copy(case = Some(name)),
+            polled(until, seconds, body),
+            began.until(now()),
+          )
+        }
+        else [TestResult(test.id, outcome, started.until(now()))]
+      }
+    }
+  }
+
+  // How body went, run on its own, as Isolation has it, reading as a task.
+  @Clock @Channel @Concurrent<@Polling @Clock @E2> @Polling private polled<@F, @E2>(
+    until: Option<Instant>,
+    seconds: Int,
+    body: @Fail @Channel @F () -> Unit,
+  ): Outcome = Isolation.run(() -> Polled.channels(until, seconds, body))
 }

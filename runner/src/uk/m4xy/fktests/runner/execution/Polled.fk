@@ -1,0 +1,65 @@
+import fckt.io.*
+import fckt.io.Polls.*
+import fckt.concurrent.Concurrent
+import fckt.time.*
+import fckt.time.Times.*
+import fckt.text.Bytes
+import fckt.effects.Fail
+
+// What a test reads, from a program it runs or anything else it has open, read while other tests
+// go on: before each read, the test waits, as a task, until there's something to read. Given until,
+// it fails once it has waited past it.
+module Polled {
+  @Fail @Channel @Clock @Concurrent<@Polling @Clock @E> @Polling channels<A, @E>(
+    until: Option<Instant>,
+    seconds: Int,
+    body: @Channel @E () -> A,
+  ): A = Channel(
+    readLineFrom = (input, resume) -> {
+      awaitInput(input, until, seconds)
+      resume(readLineFrom(input))
+    },
+    readFrom = (input, count, resume) -> {
+      awaitInput(input, until, seconds)
+      resume(if (count < 0) rest(input, until, seconds, nothing) else readFrom(input, count))
+    },
+    writeTo = (output, bytes, resume) -> resume(writeTo(output, bytes)),
+    closeInput = (input, resume) -> resume(closeInput(input)),
+    closeOutput = (output, resume) -> resume(closeOutput(output)),
+  ) { body() }
+
+  // What's left to read from input, after read.
+  @Fail @Clock @Concurrent<@Polling @Clock @E> @Polling private rest<@E>(
+    input: InputHandle,
+    until: Option<Instant>,
+    seconds: Int,
+    read: Bytes,
+  ): Bytes = when (available(input)) {
+    Some(more) -> {
+      awaitInput(input, until, seconds)
+      rest(input, until, seconds, joined(read, more))
+    }
+    None -> read
+  }
+
+  @Fail @Clock @Concurrent<@Polling @Clock @E> @Polling private awaitInput<@E>(
+    input: InputHandle,
+    until: Option<Instant>,
+    seconds: Int,
+  ): Unit = when (until) {
+    None -> awaitReadable(descriptorOf(input))
+    Some(time) -> if (!awaitReadableFor(descriptorOf(input), now().until(time))) fail(
+      "took longer than ${seconds}s, so it was stopped",
+    )
+  }
+
+  private external descriptorOf(input: InputHandle): Descriptor = "Unix.descr_of_in_channel input"
+
+  // What input has to read now, which it has once it's readable, or None at its end.
+  private external available(input: InputHandle): Option<Bytes> =
+    "(fun c -> let b = Bytes.create 65536 in let n = In_channel.input c b 0 65536 in if n = 0 then None else Some (Bytes.sub_string b 0 n)) input"
+
+  private external joined(a: Bytes, b: Bytes): Bytes = "a ^ b"
+
+  private external nothing: Bytes = "\"\""
+}

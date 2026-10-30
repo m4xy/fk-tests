@@ -7,6 +7,7 @@ import uk.m4xy.fktests.runner.execution.*
 import uk.m4xy.fktests.runner.reporting.*
 import fckt.effects.Fail
 import fckt.io.Console
+import fckt.io.Channel
 
 // Runs tests written with fk-tests, as fckt --test's runner, --runner uk.m4xy.fktests.runner.Runner:
 // fckt's main makes the plan of them with test, suite and plan, and gives it to main. Only that
@@ -20,7 +21,7 @@ module Runner {
     name: String,
     line: Int,
     effects: List<String>,
-    body: @Fail @E () -> Unit,
+    body: @Fail @Channel @E () -> Unit,
   ): TestCase<@E> =
     TestCase(TestId(path(file), sections, name), Location(path(file), line), effects, Single(body))
 
@@ -32,8 +33,8 @@ module Runner {
     name: String,
     line: Int,
     effects: List<String>,
-    given: @Fail @F () -> List<(String, @Fail @E () -> Unit)>,
-    around: @Fail @F (@Fail @E () -> Unit) -> Unit,
+    given: @Fail @Channel @F () -> List<(String, @Fail @Channel @E () -> Unit)>,
+    around: @Fail @Channel @F (@Fail @Channel @E () -> Unit) -> Unit,
   ): TestCase<@F> =
     TestCase(
       TestId(path(file), sections, name),
@@ -52,19 +53,21 @@ module Runner {
   // don't say what they mean. args choose which run, as selectorOf reads them; --without Network
   // skips the tests that do an effect, by its name or full name, and can be given again; each test
   // has --timeout seconds, or 300, to run, or as long as it takes with 0; --snapshots says where
-  // they're kept, and --update-snapshots keeps them as they are now; and --report lines reports as
+  // they're kept, and --update-snapshots keeps them as they are now; --jobs says how many may run at
+  // once, as jobsOf reads it; and --report lines reports as
   // LineReport does, for another program; ConsoleReport, for people, if not.
   @Console @Clock @Process main<@E>(
     args: List<String>,
     plan: Plan<@E>,
-  ): Unit = when ((selectionOf(args), secondsOf(args))) {
-    (Error(problem), _) -> refuse(problem)
-    (_, Error(problem)) -> refuse(problem)
-    (Ok(selection), Ok(seconds)) -> {
+  ): Unit = when ((selectionOf(args), secondsOf(args), jobsOf(args))) {
+    (Error(problem), _, _) -> refuse(problem)
+    (_, Error(problem), _) -> refuse(problem)
+    (_, _, Error(problem)) -> refuse(problem)
+    (Ok(selection), Ok(seconds), Ok(jobs)) -> {
       valueOf(args, "--snapshots").forEach { setEnv("FK_TESTS_SNAPSHOTS", it) }
       if (args.contains("--update-snapshots")) setEnv("FK_TESTS_UPDATE_SNAPSHOTS", "1")
       report = if (reportOf(args) == Lines) LineReport else ConsoleReport
-      summary = report { Execution.run(plan, selection, valuesOf(args, "--without"), seconds) }
+      summary = report { Execution.run(plan, selection, valuesOf(args, "--without"), seconds, jobs) }
       if (summary.failed > 0) exit(1)
     }
   }
@@ -86,6 +89,21 @@ module Runner {
       None -> Error(notSeconds(text))
     }
   }
+
+  // How many tests args say may run at once: --jobs's, or as many as the machine has cores.
+  @Process jobsOf(args: List<String>): Result<Int, String> = when (valueOf(args, "--jobs")) {
+    None -> Ok(cores(Unit))
+    Some(text) -> when (text.toIntOrNone()) {
+      Some(jobs) -> if (jobs >= 1) Ok(jobs) else Error(notJobs(text))
+      None -> Error(notJobs(text))
+    }
+  }
+
+  private notJobs(
+    text: String,
+  ): String = "--jobs is how many tests may run at once, 1 or more, not $text"
+
+  private external cores(u: Unit): Int = "(fun _ -> Domain.recommended_domain_count ()) u"
 
   // The tests args choose: those their selectors do, or, without any, all.
   selectionOf(args: List<String>): Result<Selection, String> = {
@@ -166,6 +184,6 @@ module Runner {
   }
 
   // The options that give something.
-  private valued: List<String> = ["--report", "--without", "--timeout", "--snapshots"]
+  private valued: List<String> = ["--report", "--without", "--timeout", "--snapshots", "--jobs"]
 
 }

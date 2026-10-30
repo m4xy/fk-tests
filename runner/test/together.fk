@@ -1,0 +1,68 @@
+import uk.m4xy.fktests.api.Test
+import uk.m4xy.fktests.runner.Runner
+import uk.m4xy.fktests.runner.events.TestEvents
+import uk.m4xy.fktests.runner.execution.*
+import uk.m4xy.fktests.runner.results.*
+import uk.m4xy.fktests.runner.plan.TestIds.*
+import fckt.io.Paths.*
+import fckt.io.Processes.*
+import fckt.io.Process
+import fckt.io.Channel
+import fckt.time.*
+import fckt.time.Times.*
+
+waits = Runner.plan([
+  Runner.suite("waits.fk", [
+    Runner.test("waits.fk", [], "first", 3, []) { run("sleep", ["1"]) },
+    Runner.test("waits.fk", [], "second", 4, []) { run("sleep", ["1"]) },
+  ]),
+  Runner.suite("more.fk", [Runner.test("more.fk", [], "third", 3, []) { run("sleep", ["1"]) }]),
+])
+
+// Tests that wait for the programs they run go on together, and are told as the plan has them.
+@Test @Clock @Channel @Process testsThatWaitRunTogether() = {
+  var events = []
+  started = now()
+  TestEvents(
+    suiteStarted = suite -> { events = events + ["started ${suite.value}"] },
+    testStarted = id -> { events = events + ["started ${id.qualifiedName}"] },
+    testFinished = result -> { events = events + ["finished ${result.id.qualifiedName}"] },
+    suiteFinished = suite -> { events = events + ["finished ${suite.value}"] },
+    completed = summary -> { events = events + ["${summary.passed} passed"] },
+  ) { Execution.run(waits, Selection.All, [], 0, 3) }
+  assertEquals(
+    [
+      "started waits.fk", "started first", "finished first", "started second", "finished second",
+      "finished waits.fk", "started more.fk", "started third", "finished third", "finished more.fk",
+      "3 passed",
+    ],
+    events,
+  )
+  assert(started.until(now()).millis < 2000)
+}
+
+// A test that waits longer than it's given, while others run, is stopped, and fails.
+@Test @Clock @Channel @Process aTestThatWaitsTooLongIsStopped() = {
+  var outcomes = []
+  TestEvents(
+    suiteStarted = _ -> Unit,
+    testStarted = _ -> Unit,
+    testFinished = result -> { outcomes = outcomes + [result.outcome] },
+    suiteFinished = _ -> Unit,
+    completed = _ -> Unit,
+  ) {
+    Execution.run(
+      Runner.plan([
+        Runner.suite("slow.fk", [
+          Runner.test("slow.fk", [], "slow", 3, []) { run("sleep", ["3"]) },
+          Runner.test("slow.fk", [], "quick", 4, []) { assert(true) },
+        ]),
+      ]),
+      Selection.All,
+      [],
+      1,
+      2,
+    )
+  }
+  assertEquals([Failed(Failure("took longer than 1s, so it was stopped")), Passed], outcomes)
+}

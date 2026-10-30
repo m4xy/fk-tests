@@ -1,9 +1,10 @@
 import fckt.effects.Fail
+import fckt.io.Channel
 
 // What a test does, which fails it by failing, as a failed assert does.
 type TestBody<@E> {
   // One thing.
-  Single(run: @Fail @E () -> Unit),
+  Single(run: @Fail @Channel @E () -> Unit),
   // Cases, which it gives when it's run: a name and what it does, each run on its own.
-  Cases(cases: @Fail @E () -> List<(String, @Fail @E () -> Unit)>),
+  Cases(cases: @Fail @Channel @E () -> List<(String, @Fail @Channel @E () -> Unit)>),
 }
