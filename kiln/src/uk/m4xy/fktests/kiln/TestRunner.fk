@@ -6,7 +6,12 @@ import uk.m4xy.kiln.Dependencies.*
 // that lists what it runs inside. A runner that uses nothing is the project's own, whose tests use
 // it.
 type TestRunner(
-  uses: List<Dependency> = [library("uk.m4xy:fk-tests-runner:0.1.0")],
+  uses: List<Dependency> = [library(
+    "uk.m4xy:fk-tests-runner:0.1.0",
+    git = "https://github.com/m4xy/fk-tests",
+    ref = "main",
+    folder = "runner",
+  )],
   runner: String = "uk.m4xy.fktests.runner.Runner",
   marker: String = "uk.m4xy.fktests.api.Test",
   fixtures: String = "uk.m4xy.fktests.api.Fixtures",

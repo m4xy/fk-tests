@@ -4,4 +4,8 @@ import uk.m4xy.kiln.Dependencies.*
 
 // A folder of tests, and what they're written with, which the tests see beside the project's own
 // packages and libraries, and the program doesn't: fk-tests, unless they're its own.
-type TestRoot(folder: Path, uses: List<Dependency> = [library("uk.m4xy:fk-tests:0.1.0")])
+type TestRoot(folder: Path, uses: List<Dependency> = [library(
+  "uk.m4xy:fk-tests:0.1.0",
+  git = "https://github.com/m4xy/fk-tests",
+  ref = "main",
+)])
